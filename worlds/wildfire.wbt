@@ -23,7 +23,10 @@ TexturedBackground {
 TexturedBackgroundLight {
 }
 Mavic2Pro {
-  translation 0 0 0.5
+  translation -12 -10 2.0  #move it away from center
+  rotation 0 0 1 0
+  controller "mavic2pro"
+  name "mavic2pro"
 }
 RectangleArena {
   translation 0 0.2 0
