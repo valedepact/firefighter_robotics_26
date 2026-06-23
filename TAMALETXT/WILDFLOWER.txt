@@ -1,0 +1,94 @@
+CREATE PROJECT AT
+---------------------
+C:\Users\VALE DE PACT\Desktop\ROBOTICS\
+
+STRUCTURE
+---------
+ROBOTICS/
+├── worlds/
+│   └── wildfire.wbt
+├── controllers/
+├── protos/
+├── plugins/
+│   ├── physics/
+│   ├── remote_controls/
+│   └── robot_windows/
+└── libraries/
+
+ADD GROUND
+--------
+Add
+→ PROTO nodes (Webots Projects)
+→ Objects
+→ Floors
+→ RectangleArena
+
+###
+Start the drone...
+You can control the drone with your computer keyboard:
+- 'up': move forward.
+- 'down': move backward.
+- 'right': turn right.
+- 'left': turn left.
+- 'shift + up': increase the target altitude.
+- 'shift + down': decrease the target altitude.
+- 'shift + right': strafe right.
+- 'shift + left': strafe left.
+###
+
+
+from controller import Robot
+
+robot = Robot()
+timestep = int(robot.getBasicTimeStep())
+
+camera = robot.getDevice("camera")
+camera.enable(timestep)
+
+imu = robot.getDevice("inertial unit")
+imu.enable(timestep)
+
+gps = robot.getDevice("gps")
+gps.enable(timestep)
+
+gyro = robot.getDevice("gyro")
+gyro.enable(timestep)
+
+front_left_motor = robot.getDevice("front left propeller")
+front_right_motor = robot.getDevice("front right propeller")
+rear_left_motor = robot.getDevice("rear left propeller")
+rear_right_motor = robot.getDevice("rear right propeller")
+
+motors = [front_left_motor, front_right_motor, rear_left_motor, rear_right_motor]
+for m in motors:
+    m.setPosition(float('inf'))   # continuous rotation mode
+    m.setVelocity(1.0)
+
+# Stabilization gains (tune these if it drifts or flips)
+K_VERTICAL_THRUST = 68.5   # base speed to roughly counter gravity
+K_VERTICAL_OFFSET = 0.6
+K_VERTICAL_P = 3.0
+K_ROLL_P = 50.0
+K_PITCH_P = 30.0
+TARGET_ALTITUDE = 1.5       # metres
+
+while robot.step(timestep) != -1:
+    roll, pitch, _ = imu.getRollPitchYaw()
+    altitude = gps.getValues()[2]          # Z is up in this world
+    roll_rate, pitch_rate, _ = gyro.getValues()
+
+    roll_input = K_ROLL_P * max(-1.0, min(1.0, roll)) + roll_rate
+    pitch_input = K_PITCH_P * max(-1.0, min(1.0, pitch)) + pitch_rate
+
+    alt_error = max(-1.0, min(1.0, TARGET_ALTITUDE - altitude + K_VERTICAL_OFFSET))
+    vertical_input = K_VERTICAL_P * (alt_error ** 3)
+
+    fl = K_VERTICAL_THRUST + vertical_input - roll_input - pitch_input
+    fr = K_VERTICAL_THRUST + vertical_input + roll_input - pitch_input
+    rl = K_VERTICAL_THRUST + vertical_input - roll_input + pitch_input
+    rr = K_VERTICAL_THRUST + vertical_input + roll_input + pitch_input
+
+    front_left_motor.setVelocity(fl)
+    front_right_motor.setVelocity(-fr)
+    rear_left_motor.setVelocity(-rl)
+    rear_right_motor.setVelocity(rr)

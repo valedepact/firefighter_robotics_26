@@ -1,0 +1,95 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/trees/protos/Sassafras.proto"
+EXTERNPROTO "../protos/Fire.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/robots/dji/mavic/protos/Mavic2Pro.proto"
+
+WorldInfo {
+  basicTimeStep 8
+  defaultDamping Damping {
+    linear 0.5
+    angular 0.5
+  }
+}
+Viewpoint {
+  orientation 0.09467326999948769 0.09242238194584372 0.9912088958756679 4.679472535949761
+  position 0.15194882595338807 7.237081414500268 0.7057565247809602
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+Mavic2Pro {
+  translation 0.0188 0.262 0.3
+}
+RectangleArena {
+  translation 0 0.2 0
+  floorSize 80 80
+  wallHeight 0
+}
+Sassafras {
+  translation 3 0 0
+  name "sassafras tree(1)"
+}
+Sassafras {
+  translation 4 10 0
+  name "sassafras tree(2)"
+}
+Sassafras {
+  translation -8 8 0
+  name "sassafras tree(3)"
+}
+Sassafras {
+  translation 3 -8 0
+  name "sassafras tree(4)"
+}
+Sassafras {
+  translation -5 -14 0
+  name "sassafras tree(5)"
+}
+Sassafras {
+  translation -2 8 0
+  name "sassafras tree(6)"
+}
+Sassafras {
+  translation -9 -7 0
+  name "sassafras tree(7)"
+}
+Sassafras {
+  translation -12 2 0
+  name "sassafras tree(8)"
+}
+Sassafras {
+  translation -4 -2 0
+  name "sassafras tree(9)"
+}
+Sassafras {
+  translation -11 -18 0
+  name "sassafras tree(10)"
+}
+Sassafras {
+  translation -15 -8 0
+  name "sassafras tree(11)"
+}
+Sassafras {
+  translation -1 -16 0
+  name "sassafras tree(12)"
+}
+Sassafras {
+  translation 10 0 -5
+  name "sassafras tree(13)"
+}
+Sassafras {
+  translation 10 0 -3
+}
+Robot {
+  translation 19 -17 0
+  name "fire_manager"
+  controller "fire_manager"
+  supervisor TRUE
+}
+DEF FIRE_1 Fire {
+}
