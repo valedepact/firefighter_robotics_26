@@ -23,12 +23,12 @@ TexturedBackground {
 TexturedBackgroundLight {
 }
 Mavic2Pro {
-  translation 0.0188 0.262 0.3
+  translation 0 0 0.5
 }
 RectangleArena {
   translation 0 0.2 0
   floorSize 80 80
-  wallHeight 0
+  wallHeight 0.1
 }
 Sassafras {
   translation 3 0 0
