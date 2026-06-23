@@ -8,4 +8,4 @@ orthographicViewHeight: 1
 textFiles: -1
 globalOptionalRendering: CameraFrustums
 consoles: Console:All:All
-renderingDevicePerspectives: Mavic 2 PRO:camera;1;1;0;0.00330579
+renderingDevicePerspectives: Mavic2Pro:camera;1;1;0;0
