@@ -5,124 +5,112 @@ import numpy as np
 robot = Robot()
 timestep = int(robot.getBasicTimeStep())
 
-# === Devices ===
+# Devices
 imu = robot.getDevice("inertial unit")
 imu.enable(timestep)
-
 gps = robot.getDevice("gps")
 gps.enable(timestep)
-
 gyro = robot.getDevice("gyro")
 gyro.enable(timestep)
 
-# === Camera ===
 camera = robot.getDevice("camera")
 camera.enable(timestep)
-width = camera.getWidth()
-height = camera.getHeight()
-print(f"✅ Camera enabled ({width}x{height}) - Double-click camera in Scene Tree to view")
+width, height = camera.getWidth(), camera.getHeight()
+print(f"✅ Camera enabled ({width}x{height})")
 
-# === Keyboard (for testing) ===
 keyboard = Keyboard()
 keyboard.enable(timestep)
 
-# === Motors ===
-fl_motor = robot.getDevice("front left propeller")
-fr_motor = robot.getDevice("front right propeller")
-rl_motor = robot.getDevice("rear left propeller")
-rr_motor = robot.getDevice("rear right propeller")
+# Motors
+fl = robot.getDevice("front left propeller")
+fr = robot.getDevice("front right propeller")
+rl = robot.getDevice("rear left propeller")
+rr = robot.getDevice("rear right propeller")
 
-for motor in [fl_motor, fr_motor, rl_motor, rr_motor]:
-    motor.setPosition(float('inf'))
-    motor.setVelocity(0.0)
+for m in [fl, fr, rl, rr]:
+    m.setPosition(float('inf'))
+    m.setVelocity(0.0)
 
-# === Parameters ===
-TARGET_ALTITUDE = 8.0          # Good patrol altitude
+# Parameters
+TARGET_ALTITUDE = 7.0
 K_VERTICAL_THRUST = 68.5
 K_VERTICAL_OFFSET = 0.6
-K_VERTICAL_P = 3.0
+K_VERTICAL_P = 3.2
 K_ROLL_P = 50.0
 K_PITCH_P = 30.0
+K_YAW_P = 4.0
 
-# Fire detection parameters
-FIRE_LOWER = np.array([0, 50, 200])      # HSV range for fire
-FIRE_UPPER = np.array([30, 255, 255])
+# Fire detection
+FIRE_LOWER = np.array([0, 60, 180])
+FIRE_UPPER = np.array([35, 255, 255])
 
-state = "PATROL"   # PATROL, GOTO_FIRE, EXTINGUISH, RETURN
-target_pos = None
-
-print(f"=== Firefighter Drone STARTED - Target Alt: {TARGET_ALTITUDE}m ===")
-
+state = "PATROL"
 step = 0
+fire_detected_time = 0
+
+print("=== Firefighter Drone STARTED ===")
 
 while robot.step(timestep) != -1:
     step += 1
-    
-    # Read sensors
     roll, pitch, yaw = imu.getRollPitchYaw()
     altitude = gps.getValues()[2]
-    roll_rate, pitch_rate, _ = gyro.getValues()
+    roll_rate, pitch_rate, yaw_rate = gyro.getValues()
 
-    # Keyboard override
+    # Keyboard altitude adjustment
     key = keyboard.getKey()
-    if key == Keyboard.UP:    TARGET_ALTITUDE += 0.05
-    if key == Keyboard.DOWN:  TARGET_ALTITUDE = max(1.0, TARGET_ALTITUDE - 0.05)
+    if key == Keyboard.UP:    TARGET_ALTITUDE += 0.1
+    if key == Keyboard.DOWN:  TARGET_ALTITUDE = max(1.0, TARGET_ALTITUDE - 0.1)
 
-    # === Fire Detection ===
-    if step % 8 == 0:   # process image every ~80ms
-        image = camera.getImage()
-        img = np.frombuffer(image, np.uint8).reshape((height, width, 4))
+    # === Fire Detection (every 8 steps) ===
+    if step % 8 == 0:
+        img = np.frombuffer(camera.getImage(), np.uint8).reshape((height, width, 4))
         img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
         hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
         
         mask = cv2.inRange(hsv, FIRE_LOWER, FIRE_UPPER)
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
-        if contours and max(cv2.contourArea(c) for c in contours) > 50:
+        if contours:
             largest = max(contours, key=cv2.contourArea)
-            M = cv2.moments(largest)
-            if M["m00"] > 0:
-                cx = int(M["m10"]/M["m00"])
-                cy = int(M["m01"]/M["m00"])
-                
-                # Simple bearing estimation
-                center_error_x = (cx - width//2) / (width//2)
-                
-                if state == "PATROL":
-                    print("🔥 FIRE DETECTED!")
-                    state = "GOTO_FIRE"
-                    # Approximate target (will improve later)
-                    target_pos = gps.getValues()
+            area = cv2.contourArea(largest)
+            if area > 80 and state == "PATROL":
+                print(f"🔥 FIRE DETECTED! Area = {area:.0f}")
+                state = "GOTO_FIRE"
+                fire_detected_time = step
 
     # === State Machine ===
-    if state == "PATROL":
-        # Simple patrol pattern (you can improve this)
-        pass
+    forward_input = 0.0
+    yaw_input = 0.0
 
-    elif state == "GOTO_FIRE":
-        # Go toward fire (basic version)
+    if state == "GOTO_FIRE":
         TARGET_ALTITUDE = 6.0
-        # Add horizontal movement here later
+        forward_input = 12.0          # move forward
+        # Simple yaw towards center of image can be added later
 
-    # === Attitude Control ===
+    # === PID Control ===
     vertical_input = K_VERTICAL_P * (TARGET_ALTITUDE - altitude + K_VERTICAL_OFFSET)
     
-    roll_input  = K_ROLL_P * roll  + roll_rate
-    pitch_input = K_PITCH_P * pitch + pitch_rate
+    roll_input  = K_ROLL_P * roll  + 1.5 * roll_rate
+    pitch_input = K_PITCH_P * pitch + 1.5 * pitch_rate + forward_input   # forward movement via pitch
+    yaw_input   = K_YAW_P * yaw_rate   # basic stabilization
 
-    front_left  = K_VERTICAL_THRUST + vertical_input - roll_input + pitch_input
-    front_right = K_VERTICAL_THRUST + vertical_input + roll_input + pitch_input
-    rear_left   = K_VERTICAL_THRUST + vertical_input - roll_input - pitch_input
-    rear_right  = K_VERTICAL_THRUST + vertical_input + roll_input - pitch_input
+    # Motor mixing
+    front_left  = K_VERTICAL_THRUST + vertical_input - roll_input + pitch_input + yaw_input
+    front_right = K_VERTICAL_THRUST + vertical_input + roll_input + pitch_input - yaw_input
+    rear_left   = K_VERTICAL_THRUST + vertical_input - roll_input - pitch_input + yaw_input
+    rear_right  = K_VERTICAL_THRUST + vertical_input + roll_input - pitch_input - yaw_input
 
-    # Clamp and apply
-    for val in [front_left, front_right, rear_left, rear_right]:
-        val = max(0.0, min(200.0, val))
+    # Clamp
+    front_left  = max(0.0, min(200.0, front_left))
+    front_right = max(0.0, min(200.0, front_right))
+    rear_left   = max(0.0, min(200.0, rear_left))
+    rear_right  = max(0.0, min(200.0, rear_right))
 
-    fl_motor.setVelocity(front_left)
-    fr_motor.setVelocity(-front_right)
-    rl_motor.setVelocity(-rear_left)
-    rr_motor.setVelocity(rear_right)
+    fl.setVelocity(front_left)
+    fr.setVelocity(-front_right)
+    rl.setVelocity(-rear_left)
+    rr.setVelocity(rear_right)
 
-    if step % 50 == 0:
-        print(f"State: {state} | alt={altitude:.2f}m | target={TARGET_ALTITUDE:.1f}m")
+    # Status
+    if step % 60 == 0:
+        print(f"State: {state} | alt={altitude:.2f}m | target={TARGET_ALTITUDE:.1f}m | pitch={pitch:.3f}")
