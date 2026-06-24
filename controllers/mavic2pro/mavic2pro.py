@@ -52,6 +52,13 @@ current_fire   = "FIRE_1"   # updated by fire_manager broadcasts
 known_fires    = []         # list of (def_name, x, y) from fire_manager
 last_detection = None       # most recent scan() result, kept for NAVIGATE phase
 
+# Debounce: require the same detection kind for several consecutive frames
+# before acting on it, so a single-frame false positive (sun glare, etc.)
+# can't send the drone chasing a fire that isn't there.
+DETECTION_CONFIRM_FRAMES = 3
+detection_streak_kind  = None
+detection_streak_count = 0
+
 print("=== MAVIC 2 PRO STARTING ===")
 
 while robot.step(timestep) != -1:
@@ -95,13 +102,26 @@ while robot.step(timestep) != -1:
     elif state == "PATROL":
         kind, result = scan(camera)
 
-        if kind == "fire":
+        # Debounce — only act once the same kind has been seen for several
+        # consecutive frames, to filter single-frame false positives.
+        if kind in ("fire", "smoke") and kind == detection_streak_kind:
+            detection_streak_count += 1
+        elif kind in ("fire", "smoke"):
+            detection_streak_kind  = kind
+            detection_streak_count = 1
+        else:
+            detection_streak_kind  = None
+            detection_streak_count = 0
+
+        confirmed = detection_streak_count >= DETECTION_CONFIRM_FRAMES
+
+        if kind == "fire" and confirmed:
             nav.set_fire_position(*gps.getValues()[:2])
             last_detection = result
             state = "NAVIGATE"
             print(f"🔥 Fire detected during patrol → NAVIGATE  (target: {current_fire})")
 
-        elif kind == "smoke":
+        elif kind == "smoke" and confirmed:
             nav.set_fire_position(*gps.getValues()[:2])
             last_detection = result
             state = "NAVIGATE"
