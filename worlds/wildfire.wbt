@@ -35,6 +35,15 @@ Mavic2Pro {
       name "receiver"
       channel 1
     }
+    DistanceSensor {
+      translation 0 0.2 0
+      rotation 0 0 1 1.5708
+      name "front distance sensor"
+      lookupTable [
+        0 0 0
+        10 10 0
+      ]
+    }
   ]
 }
 RectangleArena {

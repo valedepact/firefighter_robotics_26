@@ -31,6 +31,9 @@ PATROL_ROWS   = [
 # ──────────────────────────────────────────────
 ARRIVAL_RADIUS      = 2.0   # metres — close enough to a waypoint
 FIRE_ARRIVAL_RADIUS = 1.5   # metres — close enough to be above fire
+
+OBSTACLE_RANGE = 4.0   # metres — front distance sensor threshold to trigger avoidance
+AVOID_CLIMB    = 3.0   # metres — extra altitude added to clear a tree canopy
 PATROL_SPEED        = 0.10  # pitch/roll command magnitude during patrol
 NAV_SPEED           = 0.15  # pitch/roll command magnitude flying to fire
 YAW_GAIN            = 0.8   # how aggressively to yaw toward target
@@ -63,17 +66,36 @@ class Navigator:
         # Remembered fire GPS position (set once detection triggers NAVIGATE)
         self.fire_gps = None
 
+        # Altitude to restore once a tree obstacle is cleared (None = not avoiding)
+        self._avoid_prev_altitude = None
+
         print("Navigator ready — lawnmower patrol initialised")
         print(f"  {len(PATROL_ROWS)} rows × {PATROL_STEP_Y} m spacing")
 
+    # ── Obstacle avoidance ───────────────────────────────────────────────────
+    def _avoid_obstacles(self, front_ds, fc):
+        """Climb over a tree detected ahead, then restore altitude once clear."""
+        if front_ds is None:
+            return
+        distance = front_ds.getValue()
+        if distance < OBSTACLE_RANGE and self._avoid_prev_altitude is None:
+            self._avoid_prev_altitude = fc.target_altitude
+            fc.set_altitude(fc.target_altitude + AVOID_CLIMB)
+            print(f"🌳 Obstacle ahead ({distance:.1f}m) — climbing to clear it")
+        elif distance >= OBSTACLE_RANGE and self._avoid_prev_altitude is not None:
+            fc.set_altitude(self._avoid_prev_altitude)
+            self._avoid_prev_altitude = None
+            print("✅ Clear of obstacle — resuming altitude")
+
     # ── Patrol ────────────────────────────────────────────────────────────────
 
-    def patrol(self, gps, fc):
+    def patrol(self, gps, fc, front_ds=None):
         """
         Fly a lawnmower grid over the arena.
         Returns True when the full grid has been covered (loop back to start).
         Calls fc.set_velocity() to steer.
         """
+        self._avoid_obstacles(front_ds, fc)
         pos  = gps.getValues()
         x, y = pos[0], pos[1]
         wx, wy = self._waypoint
@@ -102,7 +124,7 @@ class Navigator:
 
     # ── Fly to fire ───────────────────────────────────────────────────────────
 
-    def fly_to_fire(self, gps, fc, detection_result=None):
+    def fly_to_fire(self, gps, fc, detection_result=None, front_ds=None):
         """
         Navigate toward the fire.  Two modes:
           1. Camera-guided  — if detection_result is provided and fire is visible,
@@ -133,6 +155,8 @@ class Navigator:
             return False
 
         # ── Mode 2: GPS fly-to ──
+        self._avoid_obstacles(front_ds, fc)
+
         if self.fire_gps is None:
             print("⚠️  fly_to_fire called but fire_gps not set — hovering")
             fc.hover()
@@ -159,11 +183,12 @@ class Navigator:
 
     # ── Return to base ────────────────────────────────────────────────────────
 
-    def return_to_base(self, gps, fc):
+    def return_to_base(self, gps, fc, front_ds=None):
         """
         Fly back to the spawn position.
         Returns True when base is reached.
         """
+        self._avoid_obstacles(front_ds, fc)
         pos  = gps.getValues()
         x, y = pos[0], pos[1]
         dx   = BASE_X - x

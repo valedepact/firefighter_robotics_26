@@ -11,6 +11,7 @@ from flight     import FlightController
 from detection  import scan
 from navigation import Navigator
 from extinguish import Extinguisher
+from wind       import WindController
 
 # ──────────────────────────────────────────────
 #  Robot & devices
@@ -30,12 +31,17 @@ keyboard = Keyboard(); keyboard.enable(timestep)
 receiver = robot.getDevice("receiver");  receiver.enable(timestep)
 print("📡 Receiver enabled — listening for fire updates on channel 1")
 
+front_ds = robot.getDevice("front distance sensor")
+front_ds.enable(timestep)
+
 # ──────────────────────────────────────────────
 #  Modules
 # ──────────────────────────────────────────────
-fc  = FlightController(robot)
-nav = Navigator()
-ext = Extinguisher(robot)
+fc   = FlightController(robot)
+nav  = Navigator()
+ext  = Extinguisher(robot)
+wind = WindController()
+drone_body = robot.getSelf()
 
 # ──────────────────────────────────────────────
 #  State machine
@@ -72,6 +78,10 @@ while robot.step(timestep) != -1:
     if key == Keyboard.DOWN:
         fc.set_altitude(fc.target_altitude - 0.5)
 
+    # ── Wind — live-controllable physical disturbance force ───────────────
+    wind.update(key)
+    drone_body.addForce(wind.force_vector(), False)
+
     # ── Always run flight controller (handles motors every step) ──────────
     takeoff_done = fc.update(imu, gps, gyro)
     if takeoff_done and state == "TAKEOFF":
@@ -105,7 +115,7 @@ while robot.step(timestep) != -1:
                 state = "NAVIGATE"
                 print(f"📡 Fire manager reported {current_fire} at ({fx}, {fy}) → NAVIGATE")
             else:
-                nav.patrol(gps, fc)
+                nav.patrol(gps, fc, front_ds)
 
     elif state == "NAVIGATE":
         kind, result = scan(camera)
@@ -114,7 +124,7 @@ while robot.step(timestep) != -1:
         else:
             last_detection = None
 
-        arrived = nav.fly_to_fire(gps, fc, last_detection)
+        arrived = nav.fly_to_fire(gps, fc, last_detection, front_ds)
         if arrived:
             state = "EXTINGUISH"
             fc.set_altitude(3.5)
@@ -130,7 +140,7 @@ while robot.step(timestep) != -1:
             print("✅ Fire out → RETURN")
 
     elif state == "RETURN":
-        arrived = nav.return_to_base(gps, fc)
+        arrived = nav.return_to_base(gps, fc, front_ds)
         if arrived:
             state = "PATROL"
             print("🏠 Back at base → PATROL")
