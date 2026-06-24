@@ -26,12 +26,13 @@ TexturedBackgroundLight {
 }
 Mavic2Pro {
   translation -20.00899318303439 -19.996339669148504 0.01545442254018295
-  rotation 0.0024437817455221717 0.9999970139540624 3.706632678339392e-06 -3.141454351997978
+  rotation 0 0 1 0
   name "Mavic2Pro"
   supervisor TRUE
   bodySlot [
     Receiver {
       name "receiver"
+      channel 1
     }
   ]
 }
