@@ -84,12 +84,17 @@ class FlightController:
         else:
             base_thrust = K_VERTICAL_THRUST
 
-        # Altitude hold (P controller)
-        vertical_input = K_VERTICAL_P * (self.target_altitude - altitude + ALTITUDE_BIAS)
+        # Altitude hold (P controller) — clamp+cube like the reference Mavic2Pro
+        # controller, so a large altitude error saturates instead of producing
+        # an unbounded thrust lurch.
+        clamped_altitude_diff = max(-1.0, min(1.0, self.target_altitude - altitude + ALTITUDE_BIAS))
+        vertical_input = K_VERTICAL_P * clamped_altitude_diff ** 3
 
-        # Attitude stabilisation — blend sensor + external commands
-        roll_input  = K_ROLL_P  * (roll  + self._cmd_roll)  + K_ROLL_RATE  * roll_rate
-        pitch_input = K_PITCH_P * (pitch + self._cmd_pitch) + K_PITCH_RATE * pitch_rate
+        # Attitude stabilisation — blend sensor + external commands.
+        # roll/pitch are clamped before scaling so a growing tilt doesn't
+        # amplify its own correction into a runaway oscillation.
+        roll_input  = K_ROLL_P  * (max(-1.0, min(1.0, roll))  + self._cmd_roll)  + K_ROLL_RATE  * roll_rate
+        pitch_input = K_PITCH_P * (max(-1.0, min(1.0, pitch)) + self._cmd_pitch) + K_PITCH_RATE * pitch_rate
         yaw_input   = K_YAW_RATE * (yaw_rate + self._cmd_yaw)
 
         # Motor mixing (Mavic 2 Pro sign convention)
