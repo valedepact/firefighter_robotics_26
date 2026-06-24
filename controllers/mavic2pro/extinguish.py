@@ -117,7 +117,9 @@ class Extinguisher:
             self._water_node = self._robot.getFromDef(self._water_name)
 
             if self._water_node is None:
-                # importMFNodeFromString doesn't set DEF — find by name field
+                # importMFNodeFromString doesn't set DEF — the new node is
+                # appended at the end of children, so grab it by index
+                self._water_node = self._children.getMFNode(self._children.getCount() - 1)
 
             print(f"💧 Water drop #{self._drop_count} spawned at ({x:.1f}, {y:.1f}, {z:.1f})")
             self._wait_count = 0
