@@ -1,9 +1,17 @@
 from controller import Supervisor, Keyboard
 import cv2
 import numpy as np
+from detection import scan
+from flight import FlightController
+from navigation import Navigator
+from extinguish import Extinguisher
 
 robot = Supervisor()
 timestep = int(robot.getBasicTimeStep())
+
+fc = FlightController(robot)
+nav = Navigator()
+ext = Extinguisher(robot)   # once at startup
 
 # === Devices ===
 imu = robot.getDevice("inertial unit")
@@ -66,6 +74,11 @@ while robot.step(timestep) != -1:
         current_thrust = K_VERTICAL_THRUST * thrust_ramp
     else:
         current_thrust = K_VERTICAL_THRUST
+    
+    # Update flight controller
+    if fc.update(imu, gps, gyro):
+        state = "PATROL"
+
 
     # State transition
     if state == "TAKEOFF" and altitude > 6.0:
@@ -91,3 +104,26 @@ while robot.step(timestep) != -1:
 
     if step % 30 == 0:
         print(f"State: {state} | alt={altitude:.2f}m | roll={roll:.3f} | pitch={pitch:.3f}")
+
+
+kind, result = scan(camera)
+if kind == "fire":
+    print(f"Fire at offset ({result['offset_x']:.2f}, {result['offset_y']:.2f})")
+    state = "NAVIGATE"
+
+# In PATROL state:
+kind, result = scan(camera)
+if kind == "fire":
+    nav.set_fire_position(*gps.getValues()[:2])
+    state = "NAVIGATE"
+elif nav.patrol(gps, fc):
+    pass  # grid done, keep patrolling
+
+# In NAVIGATE state:
+if nav.fly_to_fire(gps, fc, result):
+    state = "EXTINGUISH"
+
+# In EXTINGUISH state:
+if ext.update(gps, fc, fire_def_name="FIRE_1"):
+    ext.reset()
+    state = "RETURN"

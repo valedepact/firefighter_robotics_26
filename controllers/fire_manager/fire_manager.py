@@ -1,3 +1,4 @@
+# Fire spawning, propagation, tracking active fires
 from controller import Supervisor
 
 robot = Supervisor()
