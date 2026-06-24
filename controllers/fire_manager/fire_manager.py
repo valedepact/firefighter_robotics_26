@@ -25,10 +25,18 @@ from controller import Supervisor
 #  Tuning constants
 # ──────────────────────────────────────────────
 SPREAD_INTERVAL      = 500    # steps between spread checks (~4 s at 8 ms timestep)
-SPREAD_RADIUS        = 6.0    # metres — fire can jump to trees within this distance
-SPREAD_PROBABILITY   = 0.35   # chance per eligible tree per spread event
+SPREAD_RADIUS        = 6.0    # metres — radius a fire can reach at max strength
+MIN_SPREAD_RADIUS    = 1.0    # metres — radius a freshly-spawned (weak) fire can reach
+SPREAD_PROBABILITY   = 0.35   # chance per eligible tree per spread event, at max strength
 MAX_FIRES            = 6      # cap to keep simulation manageable
 BROADCAST_INTERVAL   = 60     # steps between emitter broadcasts
+
+# A fire grows stronger the longer it burns unattended. Strength scales both
+# how far it can ignite neighbouring trees (toward SPREAD_RADIUS) and how
+# likely it is to do so — a fire that just started is barely dangerous.
+STRENGTH_INITIAL = 1.0
+STRENGTH_MAX     = 5.0
+STRENGTH_GROWTH  = 0.5   # added once per _spread() tick
 
 # All tree positions from wildfire.wbt (x, y)
 TREE_POSITIONS = [
@@ -83,6 +91,7 @@ class FireManager:
                 "x":   pos[0],
                 "y":   pos[1],
                 "node": fire1_node,
+                "strength": STRENGTH_INITIAL,
             }
             self._burning_positions.add((round(pos[0]), round(pos[1])))
             print(f"🔥 FIRE_1 registered at ({pos[0]:.1f}, {pos[1]:.1f})")
@@ -111,30 +120,31 @@ class FireManager:
         if len(self._fires) >= MAX_FIRES:
             return
 
-        candidates = []   # (tree_x, tree_y) close to any active fire
+        # Fires grow stronger the longer they burn unattended
+        for fire in self._fires.values():
+            fire["strength"] = min(STRENGTH_MAX, fire["strength"] + STRENGTH_GROWTH)
+
+        # tree (x, y) → (dist, strength, radius) of the closest threatening fire
+        best = {}
 
         for fire in self._fires.values():
-            fx, fy = fire["x"], fire["y"]
+            fx, fy, strength = fire["x"], fire["y"], fire["strength"]
+            radius = MIN_SPREAD_RADIUS + (strength / STRENGTH_MAX) * (SPREAD_RADIUS - MIN_SPREAD_RADIUS)
+
             for tx, ty in TREE_POSITIONS:
                 if (tx, ty) in self._burning_positions:
                     continue   # already on fire
                 dist = math.hypot(tx - fx, ty - fy)
-                if dist <= SPREAD_RADIUS:
-                    candidates.append((tx, ty, dist))
+                if dist <= radius:
+                    if (tx, ty) not in best or dist < best[(tx, ty)][0]:
+                        best[(tx, ty)] = (dist, strength, radius)
 
-        # Deduplicate candidates
-        seen = set()
-        unique = []
-        for tx, ty, d in candidates:
-            if (tx, ty) not in seen:
-                seen.add((tx, ty))
-                unique.append((tx, ty, d))
-
-        # Closer trees are more likely to catch
-        for tx, ty, dist in unique:
+        # Closer trees, and stronger fires, are more likely to ignite them
+        for (tx, ty), (dist, strength, radius) in best.items():
             if len(self._fires) >= MAX_FIRES:
                 break
-            prob = SPREAD_PROBABILITY * (1 - dist / (SPREAD_RADIUS * 1.5))
+            strength_factor = strength / STRENGTH_MAX
+            prob = SPREAD_PROBABILITY * strength_factor * (1 - dist / (radius * 1.5))
             if random.random() < prob:
                 self._spawn_fire(tx, ty)
 
@@ -152,6 +162,7 @@ class FireManager:
             "x":    float(x),
             "y":    float(y),
             "node": node,
+            "strength": STRENGTH_INITIAL,
         }
         self._burning_positions.add((round(x), round(y)))
         print(f"🔥 Fire spread! {def_name} spawned at ({x}, {y}) "
