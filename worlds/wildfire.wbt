@@ -26,8 +26,14 @@ Mavic2Pro {
   translation -20 -20 2.0
   rotation 0 0 1 0
   controller "mavic2pro"
-  supervisor TRUE          # ← Add this line
+  supervisor TRUE
   name "Mavic2Pro"
+  extensionSlot [
+    Receiver {
+      name "receiver"
+      channel 1
+    }
+  ]
 }
 RectangleArena {
   translation 0 0.2 0
@@ -94,6 +100,12 @@ Robot {
   name "fire_manager"
   controller "fire_manager"
   supervisor TRUE
+  children [
+    Emitter {
+      name "emitter"
+      channel 1
+    }
+  ]
 }
 DEF FIRE_1 Fire {
 }
