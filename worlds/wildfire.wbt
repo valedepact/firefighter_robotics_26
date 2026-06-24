@@ -15,30 +15,27 @@ WorldInfo {
   }
 }
 Viewpoint {
-  orientation 0.09467326999948769 0.09242238194584372 0.9912088958756679 4.679472535949761
-  position 0.15194882595338807 7.237081414500268 0.7057565247809602
+  orientation -0.01018454727271231 -0.005132030024472535 0.999934966517662 4.0750716027540435
+  position -18.585321180522225 -18.073242072214246 0.06420034799333474
+  follow "Mavic2Pro"
+  followType "Pan and Tilt Shot"
 }
 TexturedBackground {
 }
 TexturedBackgroundLight {
 }
 Mavic2Pro {
-  translation -20 -20 2.0
-  rotation 0 0 1 0
-  controller "mavic2pro"
-  supervisor TRUE
+  hidden position_0_0 -3.301576065239744e-13
+  hidden position_5_0 6.24346404894958e-09
+  hidden position_6_0 2.3928238019447574e-09
+  translation -20.00899318303439 -19.996339669148504 0.01545442254018295
+  rotation 0.0024437817455221717 0.9999970139540624 3.706632678339392e-06 -3.141454351997978
   name "Mavic2Pro"
-  extensionSlot [
-    Receiver {
-      name "receiver"
-      channel 1
-    }
-  ]
+  supervisor TRUE
 }
 RectangleArena {
   translation 0 0.2 0
   floorSize 80 80
-  wallHeight 0.1
 }
 Sassafras {
   translation 3 0 0
@@ -97,15 +94,14 @@ Sassafras {
 }
 Robot {
   translation 19 -17 0
-  name "fire_manager"
-  controller "fire_manager"
-  supervisor TRUE
   children [
     Emitter {
-      name "emitter"
       channel 1
     }
   ]
+  name "fire_manager"
+  controller "fire_manager"
+  supervisor TRUE
 }
 DEF FIRE_1 Fire {
 }

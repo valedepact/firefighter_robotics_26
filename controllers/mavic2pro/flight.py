@@ -1,4 +1,7 @@
-# Takeoff, hovering, motor mixing, altitude control
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 """
 flight.py — Mavic 2 Pro flight control
 Handles: takeoff, hovering, altitude hold, attitude stabilisation, motor mixing.
