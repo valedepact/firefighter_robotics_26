@@ -3,7 +3,8 @@ mavic2pro.py — Main controller entry point for the Mavic 2 Pro drone.
 Owns the state machine and wires together flight, detection, navigation, extinguish.
 
 State machine:
-    TAKEOFF → PATROL → NAVIGATE → EXTINGUISH → RETURN → PATROL → ...
+    REST → TAKEOFF → PATROL → NAVIGATE → EXTINGUISH → RETURN → REST → ...
+A low battery forces RETURN from any state (overrides an active fire response).
 """
 
 from controller import Supervisor, Keyboard
@@ -12,6 +13,7 @@ from detection  import scan
 from navigation import Navigator
 from extinguish import Extinguisher
 from wind       import WindController
+from battery    import Battery
 
 # ──────────────────────────────────────────────
 #  Robot & devices
@@ -37,20 +39,27 @@ front_ds.enable(timestep)
 # ──────────────────────────────────────────────
 #  Modules
 # ──────────────────────────────────────────────
-fc   = FlightController(robot)
-nav  = Navigator()
-ext  = Extinguisher(robot)
-wind = WindController()
+fc      = FlightController(robot)
+nav     = Navigator()
+ext     = Extinguisher(robot)
+wind    = WindController()
+battery = Battery()
 drone_body = robot.getSelf()
 
 # ──────────────────────────────────────────────
 #  State machine
 # ──────────────────────────────────────────────
-state          = "TAKEOFF"
+state          = "REST"     # drone starts parked at base, not flying
 step           = 0
 current_fire   = "FIRE_1"   # updated by fire_manager broadcasts
 known_fires    = []         # list of (def_name, x, y) from fire_manager
 last_detection = None       # most recent scan() result, kept for NAVIGATE phase
+
+# How long to rest before patrolling again even with no fire signal.
+PATROL_INTERVAL = 3000   # steps
+rest_timer      = 0
+REST_ALTITUDE   = 1.0    # flight.py's set_altitude() floor — a low hover at base,
+                          # not a literal touchdown (see flight.py MIN_ALTITUDE)
 
 # Debounce: require the same detection kind for several consecutive frames
 # before acting on it, so a single-frame false positive (sun glare, etc.)
@@ -58,6 +67,8 @@ last_detection = None       # most recent scan() result, kept for NAVIGATE phase
 DETECTION_CONFIRM_FRAMES = 3
 detection_streak_kind  = None
 detection_streak_count = 0
+
+print("🔋 Press P to send the drone on patrol immediately (works even while resting)")
 
 print("=== MAVIC 2 PRO STARTING ===")
 
@@ -89,6 +100,22 @@ while robot.step(timestep) != -1:
     wind.update(key)
     drone_body.addForce(wind.force_vector(), False)
 
+    # ── Battery ─────────────────────────────────────────────────────────────
+    if state == "REST":
+        battery.charge()
+    else:
+        battery.drain()
+
+    # Low battery overrides everything else, including an active fire
+    # response — "the choice of going to charge overpowers stopping fire".
+    if battery.is_low and state not in ("RETURN", "REST"):
+        if state == "EXTINGUISH":
+            ext.reset()
+        nav.fire_gps = None
+        fc.set_altitude(7.0)
+        state = "RETURN"
+        print(f"🔋 Battery low ({battery.percent:.0f}%) — abandoning mission, returning to charge")
+
     # ── Always run flight controller (handles motors every step) ──────────
     takeoff_done = fc.update(imu, gps, gyro)
     if takeoff_done and state == "TAKEOFF":
@@ -96,7 +123,23 @@ while robot.step(timestep) != -1:
 
     # ── State machine ─────────────────────────────────────────────────────
 
-    if state == "TAKEOFF":
+    if state == "REST":
+        rest_timer += 1
+        fc.hover()
+        fc.set_altitude(REST_ALTITUDE)
+
+        manual_trigger = (key == ord('P'))
+        fire_signal    = bool(known_fires) and nav.fire_gps is None
+        interval_done  = rest_timer >= PATROL_INTERVAL
+
+        if battery.can_launch and (manual_trigger or fire_signal or interval_done):
+            rest_timer = 0
+            fc.set_altitude(7.0)
+            state = "TAKEOFF"
+            print(f"🚁 Leaving REST → TAKEOFF  (battery: {battery.percent:.0f}%, "
+                  f"trigger: {'manual' if manual_trigger else 'fire signal' if fire_signal else 'interval'})")
+
+    elif state == "TAKEOFF":
         pass   # fc.update() handles everything during takeoff
 
     elif state == "PATROL":
@@ -162,11 +205,12 @@ while robot.step(timestep) != -1:
     elif state == "RETURN":
         arrived = nav.return_to_base(gps, fc, front_ds)
         if arrived:
-            state = "PATROL"
-            print("🏠 Back at base → PATROL")
+            state = "REST"
+            print(f"🏠 Back at base → REST  (battery: {battery.percent:.0f}%)")
 
     # ── Periodic status print ─────────────────────────────────────────────
     if step % 60 == 0:
         pos = gps.getValues()
         print(f"[{step:>6}] state={state:<12} | pos=({pos[0]:.1f}, {pos[1]:.1f}) "
-              f"| alt={pos[2]:.1f}m | fires={[f[0] for f in known_fires]}")
+              f"| alt={pos[2]:.1f}m | battery={battery.percent:.0f}% "
+              f"| fires={[f[0] for f in known_fires]}")
