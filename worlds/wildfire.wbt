@@ -103,21 +103,3 @@ DEF FIRE_1 Fire {
   fireRadius 3
   intensity 1.0
 }
-
-
-ERROR: 'C:/Users/VALE DE PACT/Desktop/ROBOTICS/worlds/wildfire.wbt':45:9: error: Skipped unknown 'zDimension' field in ElevationGrid node.
-ERROR: 'C:/Users/VALE DE PACT/Desktop/ROBOTICS/worlds/wildfire.wbt':47:9: error: Skipped unknown 'zSpacing' field in ElevationGrid node.
-ERROR: 'C:/Users/VALE DE PACT/Desktop/ROBOTICS/worlds/wildfire.wbt':103:3: error: Skipped unknown 'fireRadius' parameter in Fire PROTO.
-ERROR: 'C:/Users/VALE DE PACT/Desktop/ROBOTICS/worlds/wildfire.wbt':104:3: error: Skipped unknown 'intensity' parameter in Fire PROTO.
-WARNING: Pose  > Shape  > ElevationGrid : 'height' contains 68 ignored extra value(s).
-INFO: mavic2pro: Starting controller: "C:\Users\VALE DE PACT\AppData\Local\Programs\Python\Python314\python.exe" -u mavic2pro.py
-INFO: spot_moving_demo: Starting controller: "C:\Program Files\Webots\projects\robots\boston_dynamics\spot\controllers\spot_moving_demo\spot_moving_demo.exe"
-INFO: fire_manager: Starting controller: "C:\Users\VALE DE PACT\AppData\Local\Programs\Python\Python314\python.exe" -u fire_manager.py
-ERROR: Missing declaration for 'SmokeAppearance', add: 'EXTERNPROTO "../protos/Fire/SmokeAppearance.proto"' to 'C:/Users/VALE DE PACT/Desktop/ROBOTICS/protos/Smoke.proto'.
-🚁 Mavic 2 Pro — Scouting + Fire Reporting Active
-📡 Emitter found — will broadcast fire positions
-🔥 FIRE_1 registered at (5.0, 5.0)
-FireManager ready | spread every 500 steps | max 6 fires
-🔥 Fire spread! FIRE_2 spawned at (3, -8) | total fires: 2
-=== FIRE MANAGER RUNNING ===
-[step 500] Active fires: [('FIRE_1', 5.0, 5.0), ('FIRE_2', 3.0, -8.0)]
