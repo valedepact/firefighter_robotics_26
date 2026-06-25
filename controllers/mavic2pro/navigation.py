@@ -1,86 +1,271 @@
+# GPS-based movement, fly-to-target, patrol path
+
+"""
+navigation.py — Mavic 2 Pro navigation
+Handles: lawnmower patrol grid, GPS-based fly-to-target, camera-based fire tracking,
+         and return-to-base.  Works alongside flight.py — never touches motors directly.
+"""
+
 import math
-from detection import scan
-from astar_nav import AStarNavigator
+
+# ──────────────────────────────────────────────
+#  Arena & base constants  (match wildfire.wbt)
+# ──────────────────────────────────────────────
+ARENA_MIN_X   = -38.0
+ARENA_MAX_X   =  38.0
+ARENA_MIN_Y   = -38.0
+ARENA_MAX_Y   =  38.0
+
+BASE_X        = -20.0   # drone spawn position
+BASE_Y        = -20.0
+
+# Patrol grid — lawnmower rows spaced 10 m apart
+PATROL_STEP_Y =  10.0   # gap between patrol rows
+PATROL_ROWS   = [
+    (ARENA_MIN_X + 2, ARENA_MAX_X - 2, y)
+    for y in range(int(ARENA_MIN_Y) + 5, int(ARENA_MAX_Y), int(PATROL_STEP_Y))
+]   # list of (x_start, x_end, y) — direction alternates each row
+
+# ──────────────────────────────────────────────
+#  Tuning
+# ──────────────────────────────────────────────
+ARRIVAL_RADIUS      = 2.0   # metres — close enough to a waypoint
+FIRE_ARRIVAL_RADIUS = 1.5   # metres — close enough to be above fire
+
+OBSTACLE_RANGE = 4.0   # metres — front distance sensor threshold to trigger avoidance
+AVOID_CLIMB    = 3.0   # metres — extra altitude added to clear a tree canopy
+PATROL_SPEED        = 0.10  # pitch/roll command magnitude during patrol
+NAV_SPEED           = 0.15  # pitch/roll command magnitude flying to fire
+YAW_GAIN            = 0.8   # how aggressively to yaw toward target
+CAMERA_YAW_GAIN     = 0.5   # yaw correction from camera offset_x
+CAMERA_PITCH_GAIN   = 0.3   # pitch correction from camera offset_y
+
 
 class Navigator:
-    def __init__(self, robot, gait):
-        self.robot = robot
-        self.gait = gait
-        self.camera = robot.getDevice("left head camera")
-        self.camera.enable(2 * robot.getBasicTimeStep())
-        self.front_ds = robot.getDevice("front distance sensor")
-        self.front_ds.enable(2 * robot.getBasicTimeStep())
-        self.receiver = robot.getDevice("coordination receiver")
-        self.receiver.enable(2 * robot.getBasicTimeStep())
-        
-        self.state = "PATROL"
-        self.waypoints = []
-        self.detected_fires = []
-        self.last_prioritize = 0
-        self.astar = AStarNavigator()
-        self.current_target = None
+    """
+    High-level navigation for the Mavic 2 Pro.
 
-    def update(self):
-        # === Coordination from Mavic ===
-        while self.receiver.getQueueLength() > 0:
-            data = self.receiver.getString()
-            self.receiver.nextPacket()
-            if data.startswith("FIRE:"):
-                try:
-                    x, y = map(float, data[5:].split(","))
-                    self.waypoints.append((x, y))
-                    self.state = "NAVIGATE"
-                except:
-                    pass
+    Usage
+    -----
+        nav = Navigator()
 
-        # Perception + Obstacle Avoidance
-        detection_type, info = scan(self.camera)
-        ds_value = self.front_ds.getValue()
+        # In the step loop:
+        nav.patrol(gps, fc)           # during PATROL state
+        nav.fly_to_fire(gps, fc, detection_result)   # during NAVIGATE state
+        nav.return_to_base(gps, fc)   # during RETURN state
 
-        if 0 < ds_value < 3.0:  # Obstacle
-            self.gait.step(-0.3, 1.2)
-            return "AVOID"
+    Each method returns True when the goal is reached.
+    """
 
-        # Multi-fire prioritization
-        if detection_type == "fire" and info["detected"]:
-            pos = self.robot.getSelf().getPosition()[:2]
-            dist = math.hypot(pos[0] + 5, pos[1] + 5)  # rough
-            threat = info["area"] / (dist + 1)
-            self.detected_fires.append((threat, info, pos, self.robot.getTime()))
-            self.detected_fires = sorted(self.detected_fires, key=lambda x: x[0], reverse=True)[:5]
+    def __init__(self):
+        self._row_index    = 0
+        self._going_right  = True   # alternating patrol direction
+        self._patrol_phase = "TO_START"   # TO_START | SWEEP | NEXT_ROW
+        self._waypoint     = self._first_waypoint()
 
-        if self.robot.getTime() - self.last_prioritize > 5:
-            self.last_prioritize = self.robot.getTime()
+        # Remembered fire GPS position (set once detection triggers NAVIGATE)
+        self.fire_gps = None
 
-        # State handling
-        if self.waypoints or self.detected_fires:
-            self.state = "NAVIGATE"
+        # Altitude to restore once a tree obstacle is cleared (None = not avoiding)
+        self._avoid_prev_altitude = None
 
-        if self.state == "PATROL":
-            self.gait.step(0.55, 0.2 * math.sin(self.robot.getTime() * 0.6))
-        elif self.state == "NAVIGATE":
-            target = self.waypoints[0] if self.waypoints else (self.detected_fires[0][2][0], self.detected_fires[0][2][1]) if self.detected_fires else (0, 0)
-            dx = target[0] - self.robot.getSelf().getPosition()[0]
-            dy = target[1] - self.robot.getSelf().getPosition()[1]
-            dist = math.hypot(dx, dy)
-            if dist < 2.0 and self.waypoints:
-                self.waypoints.pop(0)
-            else:
-                desired_yaw = math.atan2(dx, dy)
-                # Simplified reactive + A* fallback
-                current_yaw = self._get_yaw()
-                error = desired_yaw - current_yaw
-                turn_rate = max(-1.5, min(1.5, error * 3.0))
-                forward = 0.65 if dist > 5 else 0.4
-                self.gait.step(forward, turn_rate)
-                
-                if info.get("area", 0) > 1000:
-                    print("🔥 EXTINGUISHING FIRE 🔥")
-        else:
-            self.gait.step(0.0, 0.0)
+        print("Navigator ready — lawnmower patrol initialised")
+        print(f"  {len(PATROL_ROWS)} rows × {PATROL_STEP_Y} m spacing")
 
-        return self.state
+    # ── Obstacle avoidance ───────────────────────────────────────────────────
+    def _avoid_obstacles(self, front_ds, fc):
+        """Climb over a tree detected ahead, then restore altitude once clear."""
+        if front_ds is None:
+            return
+        distance = front_ds.getValue()
+        if distance < OBSTACLE_RANGE and self._avoid_prev_altitude is None:
+            self._avoid_prev_altitude = fc.target_altitude
+            fc.set_altitude(fc.target_altitude + AVOID_CLIMB)
+            print(f"🌳 Obstacle ahead ({distance:.1f}m) — climbing to clear it")
+        elif distance >= OBSTACLE_RANGE and self._avoid_prev_altitude is not None:
+            fc.set_altitude(self._avoid_prev_altitude)
+            self._avoid_prev_altitude = None
+            print("✅ Clear of obstacle — resuming altitude")
 
-    def _get_yaw(self):
-        rot = self.robot.getSelf().getOrientation()
-        return math.atan2(2 * (rot[0] * rot[3] + rot[1] * rot[2]), 1 - 2 * (rot[1]**2 + rot[2]**2))
+    # ── Patrol ────────────────────────────────────────────────────────────────
+
+    def patrol(self, gps, fc, front_ds=None):
+        """
+        Fly a lawnmower grid over the arena.
+        Returns True when the full grid has been covered (loop back to start).
+        Calls fc.set_velocity() to steer.
+        """
+        self._avoid_obstacles(front_ds, fc)
+        pos  = gps.getValues()
+        x, y = pos[0], pos[1]
+        wx, wy = self._waypoint
+
+        dist = math.hypot(wx - x, wy - y)
+
+        if dist < ARRIVAL_RADIUS:
+            reached = self._advance_waypoint()
+            if reached:
+                print("✅ Full patrol grid covered — restarting")
+                self._row_index   = 0
+                self._going_right = True
+                self._patrol_phase = "TO_START"
+                self._waypoint = self._first_waypoint()
+                return True
+            wx, wy = self._waypoint
+
+        # Steer toward waypoint
+        dx = wx - x
+        dy = wy - y
+        pitch, roll = self._direction_to_pitch_roll(dx, dy, PATROL_SPEED)
+        yaw = self._yaw_toward(dx, dy)
+
+        fc.set_velocity(pitch=pitch, roll=roll, yaw=yaw)
+        return False
+
+    # ── Fly to fire ───────────────────────────────────────────────────────────
+
+    def fly_to_fire(self, gps, fc, detection_result=None, front_ds=None):
+        """
+        Navigate toward the fire.  Two modes:
+          1. Camera-guided  — if detection_result is provided and fire is visible,
+                              use pixel offsets to centre the drone above it.
+          2. GPS-guided     — use self.fire_gps (set externally when fire first spotted).
+
+        Returns True when the drone is close enough to extinguish.
+        """
+        pos  = gps.getValues()
+        x, y = pos[0], pos[1]
+
+        # Obstacle avoidance must run regardless of which mode is steering —
+        # otherwise a tree in the way during camera lock-on is never climbed,
+        # and the drone can clip it / get knocked off its line to the fire.
+        self._avoid_obstacles(front_ds, fc)
+
+        # ── Mode 1: camera lock-on ──
+        if detection_result and detection_result.get("detected"):
+            ox = detection_result["offset_x"]   # -1 … +1  (right is +)
+            oy = detection_result["offset_y"]   # -1 … +1  (down  is +)
+
+            # If fire fills a large chunk of the frame we are close enough
+            if detection_result["area"] > 2000:
+                fc.hover()
+                print("✅ Fire centred in frame — close enough to extinguish")
+                return True
+
+            # Yaw to centre fire horizontally; pitch to close distance
+            yaw   = CAMERA_YAW_GAIN   * ox
+            pitch = CAMERA_PITCH_GAIN * (1 - oy)   # oy<0 means fire above → fly forward
+
+            fc.set_velocity(pitch=pitch, roll=0.0, yaw=yaw)
+            return False
+
+        # ── Mode 2: GPS fly-to ──
+        if self.fire_gps is None:
+            print("⚠️  fly_to_fire called but fire_gps not set — hovering")
+            fc.hover()
+            return False
+
+        fx, fy = self.fire_gps
+        dx, dy = fx - x, fy - y
+        dist   = math.hypot(dx, dy)
+
+        if dist < FIRE_ARRIVAL_RADIUS:
+            fc.hover()
+            print(f"✅ Arrived at fire GPS ({fx:.1f}, {fy:.1f})")
+            return True
+
+        pitch, roll = self._direction_to_pitch_roll(dx, dy, NAV_SPEED)
+        yaw = self._yaw_toward(dx, dy)
+        fc.set_velocity(pitch=pitch, roll=roll, yaw=yaw)
+        return False
+
+    def set_fire_position(self, x, y):
+        """Call this from the main loop when fire is first detected via GPS."""
+        self.fire_gps = (x, y)
+        print(f"🔥 Fire position locked: ({x:.1f}, {y:.1f})")
+
+    # ── Return to base ────────────────────────────────────────────────────────
+
+    def return_to_base(self, gps, fc, front_ds=None):
+        """
+        Fly back to the spawn position.
+        Returns True when base is reached.
+        """
+        self._avoid_obstacles(front_ds, fc)
+        pos  = gps.getValues()
+        x, y = pos[0], pos[1]
+        dx   = BASE_X - x
+        dy   = BASE_Y - y
+        dist = math.hypot(dx, dy)
+
+        if dist < ARRIVAL_RADIUS:
+            fc.hover()
+            print("✅ Returned to base")
+            return True
+
+        pitch, roll = self._direction_to_pitch_roll(dx, dy, PATROL_SPEED)
+        yaw = self._yaw_toward(dx, dy)
+        fc.set_velocity(pitch=pitch, roll=roll, yaw=yaw)
+        return False
+
+    # ── Internal helpers ──────────────────────────────────────────────────────
+
+    def _first_waypoint(self):
+        x_start, _, y = PATROL_ROWS[0]
+        return (x_start, y)
+
+    def _advance_waypoint(self):
+        """
+        Move to the next patrol waypoint.
+        Returns True if we just wrapped back to the beginning.
+        """
+        row = PATROL_ROWS[self._row_index]
+        x_start, x_end, y = row
+
+        if self._patrol_phase == "TO_START":
+            # Arrived at row start — begin sweep
+            self._patrol_phase = "SWEEP"
+            target_x = x_end if self._going_right else x_start
+            self._waypoint = (target_x, y)
+            return False
+
+        if self._patrol_phase == "SWEEP":
+            # Finished sweeping this row — move to next row
+            self._row_index += 1
+            if self._row_index >= len(PATROL_ROWS):
+                return True   # full grid done
+
+            self._going_right  = not self._going_right
+            self._patrol_phase = "TO_START"
+            _, _, next_y = PATROL_ROWS[self._row_index]
+            current_x    = self._waypoint[0]
+            self._waypoint = (current_x, next_y)
+            return False
+
+        return False
+
+    @staticmethod
+    def _direction_to_pitch_roll(dx, dy, speed):
+        """
+        Convert a world-space (dx, dy) vector into (pitch, roll) commands.
+        Webots X axis = right, Y axis = forward for the drone at yaw=0.
+        speed normalises the magnitude.
+        """
+        dist = math.hypot(dx, dy)
+        if dist < 0.01:
+            return 0.0, 0.0
+
+        norm_x = dx / dist
+        norm_y = dy / dist
+
+        # pitch forward/back maps to Y, roll left/right maps to X
+        pitch = -norm_y * speed   # negative because forward pitch tilts nose down
+        roll  =  norm_x * speed
+        return pitch, roll
+
+    @staticmethod
+    def _yaw_toward(dx, dy):
+        """Small yaw correction to face the target."""
+        angle = math.atan2(dx, dy)   # angle in world frame
+        # Return a proportional yaw command clamped to ±1
+        return max(-1.0, min(1.0, angle * YAW_GAIN / math.pi))
