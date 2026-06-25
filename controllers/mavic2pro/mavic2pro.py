@@ -13,7 +13,6 @@ from detection  import scan
 from navigation import Navigator
 from extinguish import Extinguisher
 from wind       import WindController
-from battery    import Battery
 import coordination as coord
 
 # ──────────────────────────────────────────────

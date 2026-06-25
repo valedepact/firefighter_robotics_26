@@ -136,6 +136,11 @@ class Navigator:
         pos  = gps.getValues()
         x, y = pos[0], pos[1]
 
+        # Obstacle avoidance must run regardless of which mode is steering —
+        # otherwise a tree in the way during camera lock-on is never climbed,
+        # and the drone can clip it / get knocked off its line to the fire.
+        self._avoid_obstacles(front_ds, fc)
+
         # ── Mode 1: camera lock-on ──
         if detection_result and detection_result.get("detected"):
             ox = detection_result["offset_x"]   # -1 … +1  (right is +)
@@ -155,8 +160,6 @@ class Navigator:
             return False
 
         # ── Mode 2: GPS fly-to ──
-        self._avoid_obstacles(front_ds, fc)
-
         if self.fire_gps is None:
             print("⚠️  fly_to_fire called but fire_gps not set — hovering")
             fc.hover()

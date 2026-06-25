@@ -38,6 +38,30 @@ STRENGTH_INITIAL = 1.0
 STRENGTH_MAX     = 5.0
 STRENGTH_GROWTH  = 0.5   # added once per _spread() tick
 
+# ──────────────────────────────────────────────
+#  Visual animation — flicker + grow + smoke
+#  (borrowed from Cyberbotics' own forest-firefighters reference solution)
+# ──────────────────────────────────────────────
+# Fire.proto stacks 13 pre-textured flame frames (fire_00..fire_12), each
+# offset FRAME_OFFSET_Y * frame_index along Y so only one is ever near the
+# real translation at a time. Shifting the whole node's Y by
+# -FRAME_OFFSET_Y * (anim_count % FLAME_CYCLE) brings a different frame back
+# to the actual fire position each tick, producing a flickering animation.
+FLAME_CYCLE      = 13        # number of flame texture frames in Fire.proto
+FRAME_OFFSET_Y   = 100000    # must match the per-frame Y offset baked into Fire.proto
+FLICKER_INTERVAL = 4         # steps between flicker-frame advances (lower = faster flicker)
+
+# Visual scale grows with strength so a fire looks more dangerous as it
+# burns longer unattended — independent of the gameplay SPREAD_RADIUS logic.
+FIRE_SCALE_MIN = 2.0   # visual scale at STRENGTH_INITIAL
+FIRE_SCALE_MAX = 5.0   # visual scale at STRENGTH_MAX
+
+# Smoke spawned alongside each fire, growing for SMOKE_GROW_STEPS steps
+# then holding at SMOKE_SCALE_MAX.
+SMOKE_GROW_STEPS  = 300
+SMOKE_SCALE_START = 0.2
+SMOKE_SCALE_MAX   = 2.5
+
 # All tree positions from wildfire.wbt (x, y)
 TREE_POSITIONS = [
     ( 3,   0),
@@ -87,13 +111,17 @@ class FireManager:
         if fire1_node:
             pos = fire1_node.getField("translation").getSFVec3f()
             self._fires["FIRE_1"] = {
-                "def": "FIRE_1",
-                "x":   pos[0],
-                "y":   pos[1],
-                "node": fire1_node,
-                "strength": STRENGTH_INITIAL,
+                "def":        "FIRE_1",
+                "x":          pos[0],
+                "y":          pos[1],
+                "node":       fire1_node,
+                "strength":   STRENGTH_INITIAL,
+                "anim_count": 0,
+                "base_z":     pos[2],
+                "smoke_node": None,
             }
             self._burning_positions.add((round(pos[0]), round(pos[1])))
+            self._spawn_smoke(self._fires["FIRE_1"])
             print(f"🔥 FIRE_1 registered at ({pos[0]:.1f}, {pos[1]:.1f})")
         else:
             print("⚠️  FIRE_1 not found in world — check DEF name in .wbt")
@@ -105,6 +133,9 @@ class FireManager:
         """Call every simulation step."""
         # Check for extinguished fires (nodes removed by drone)
         self._check_extinguished()
+
+        # Flicker + grow every fire, every step (cheap field writes)
+        self._animate(step_count)
 
         # Spread fire on schedule
         if step_count % SPREAD_INTERVAL == 0 and step_count > 0:
@@ -148,22 +179,71 @@ class FireManager:
             if random.random() < prob:
                 self._spawn_fire(tx, ty)
 
+    # ── Visual animation ──────────────────────────────────────────────────────
+
+    def _animate(self, step_count):
+        """
+        Run every step for every active fire:
+          - flicker through the 13 baked flame-texture frames
+          - grow the fire's visual scale with its strength
+          - grow its smoke plume for its first SMOKE_GROW_STEPS steps
+        """
+        for fire in self._fires.values():
+            node = fire["node"]
+            if node is None:
+                continue
+
+            fire["anim_count"] += 1
+
+            # Flicker: shift Y so a different baked frame lines up at the real spot.
+            if fire["anim_count"] % FLICKER_INTERVAL == 0:
+                frame = (fire["anim_count"] // FLICKER_INTERVAL) % FLAME_CYCLE
+                translation_field = node.getField("translation")
+                translation_field.setSFVec3f(
+                    [fire["x"], fire["y"] - FRAME_OFFSET_Y * frame, fire["base_z"]]
+                )
+
+            # Grow visual scale with strength (separate from gameplay spread radius).
+            strength_factor = (fire["strength"] - STRENGTH_INITIAL) / (STRENGTH_MAX - STRENGTH_INITIAL)
+            strength_factor = max(0.0, min(1.0, strength_factor))
+            scale = FIRE_SCALE_MIN + strength_factor * (FIRE_SCALE_MAX - FIRE_SCALE_MIN)
+            node.getField("scale").setSFVec3f([scale, scale, scale])
+
+            # Grow the smoke plume alongside the fire.
+            if fire["smoke_node"] is not None and fire["anim_count"] <= SMOKE_GROW_STEPS:
+                smoke_progress = fire["anim_count"] / SMOKE_GROW_STEPS
+                smoke_scale = SMOKE_SCALE_START + smoke_progress * (SMOKE_SCALE_MAX - SMOKE_SCALE_START)
+                fire["smoke_node"].getField("scale").setSFVec3f([smoke_scale, smoke_scale, smoke_scale])
+
+    def _spawn_smoke(self, fire):
+        """Add a Smoke node above the given fire and stash it on the fire dict."""
+        def_name = f"SMOKE_{fire['def']}"
+        vrml = (f'DEF {def_name} Smoke {{ translation {fire["x"]} {fire["y"]} {fire["base_z"]} '
+                f'scale {SMOKE_SCALE_START} {SMOKE_SCALE_START} {SMOKE_SCALE_START} }}\n')
+        self._children.importMFNodeFromString(-1, vrml)
+        fire["smoke_node"] = self._robot.getFromDef(def_name)
+
     def _spawn_fire(self, x, y):
         """Add a new Fire node to the world at (x, y)."""
         def_name = f"FIRE_{self._next_id}"
         self._next_id += 1
 
-        vrml = f'DEF {def_name} Fire {{ translation {x} {y} 0 }}\n'
+        vrml = f'DEF {def_name} Fire {{ translation {x} {y} 0  scale {FIRE_SCALE_MIN} {FIRE_SCALE_MIN} {FIRE_SCALE_MIN} }}\n'
         self._children.importMFNodeFromString(-1, vrml)
 
         node = self._robot.getFromDef(def_name)
-        self._fires[def_name] = {
-            "def":  def_name,
-            "x":    float(x),
-            "y":    float(y),
-            "node": node,
-            "strength": STRENGTH_INITIAL,
+        fire = {
+            "def":        def_name,
+            "x":          float(x),
+            "y":          float(y),
+            "node":       node,
+            "strength":   STRENGTH_INITIAL,
+            "anim_count": 0,
+            "base_z":     0.0,
+            "smoke_node": None,
         }
+        self._fires[def_name] = fire
+        self._spawn_smoke(fire)
         self._burning_positions.add((round(x), round(y)))
         print(f"🔥 Fire spread! {def_name} spawned at ({x}, {y}) "
               f"| total fires: {len(self._fires)}")
@@ -185,6 +265,8 @@ class FireManager:
             fire = self._fires.pop(def_name)
             pos  = (round(fire["x"]), round(fire["y"]))
             self._burning_positions.discard(pos)
+            if fire.get("smoke_node") is not None:
+                fire["smoke_node"].remove()
             print(f"💧 {def_name} extinguished — {len(self._fires)} fires remaining")
 
     # ── Broadcast ─────────────────────────────────────────────────────────────
