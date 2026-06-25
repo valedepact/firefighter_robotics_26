@@ -8,4 +8,9 @@ orthographicViewHeight: 1
 textFiles: -1
 globalOptionalRendering: CameraFrustums
 consoles: Console:All:All
-renderingDevicePerspectives: Mavic2Pro:camera;1;1;0;0
+renderingDevicePerspectives: Mavic2Pro:camera;0;1;0.258303;0.076381
+renderingDevicePerspectives: Spot:left flank camera;1;0.185185;0.627307;0.0372168
+renderingDevicePerspectives: Spot:left head camera;1;0.247222;0.50369;0
+renderingDevicePerspectives: Spot:rear camera;1;0.180556;0.421613;0.0129451
+renderingDevicePerspectives: Spot:right flank camera;1;0.218519;0.215373;0
+renderingDevicePerspectives: Spot:right head camera;1;0.22963;0;0
