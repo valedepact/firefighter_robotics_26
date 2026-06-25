@@ -7,6 +7,7 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/project
 IMPORTABLE EXTERNPROTO "../protos/Fire.proto"
 IMPORTABLE EXTERNPROTO "../protos/Water.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/robots/dji/mavic/protos/Mavic2Pro.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/robots/boston_dynamics/spot/protos/Spot.proto"
 
 WorldInfo {
   basicTimeStep 8
@@ -43,6 +44,45 @@ Mavic2Pro {
         0 0 0
         10 10 0
       ]
+    }
+    Emitter {
+      name "coordination emitter"
+      channel 3
+    }
+    Receiver {
+      name "coordination receiver"
+      channel 3
+    }
+  ]
+}
+Spot {
+  translation -17 -20 0.6
+  rotation 0 0 1 0
+  name "Spot"
+  supervisor TRUE
+  frontExtension [
+    DistanceSensor {
+      translation 0 0.4 0
+      rotation 0 0 1 1.5708
+      name "front distance sensor"
+      lookupTable [
+        0 0 0
+        10 10 0
+      ]
+    }
+  ]
+  middleExtension [
+    Receiver {
+      name "fire receiver"
+      channel 1
+    }
+    Emitter {
+      name "coordination emitter"
+      channel 3
+    }
+    Receiver {
+      name "coordination receiver"
+      channel 3
     }
   ]
 }
