@@ -91,12 +91,3 @@ Robot {
 
 DEF FIRE_1 Fire { }
 
-
-
-
-ERROR: 'C:/Users/VALE DE PACT/Desktop/ROBOTICS/worlds/wildfire.wbt':27:3: error: Skipped unknown 'translation' field in ElevationGrid node.
-ERROR: 'C:/Users/VALE DE PACT/Desktop/ROBOTICS/worlds/wildfire.wbt':29:3: error: Skipped unknown 'zDimension' field in ElevationGrid node.
-ERROR: 'C:/Users/VALE DE PACT/Desktop/ROBOTICS/worlds/wildfire.wbt':31:3: error: Skipped unknown 'zSpacing' field in ElevationGrid node.
-ERROR: 'C:/Users/VALE DE PACT/Desktop/ROBOTICS/worlds/wildfire.wbt':38:3: error: Skipped unknown 'appearance' field in ElevationGrid node.
-ERROR: Missing declaration for 'Sassafras', add: 'EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/trees/protos/Sassafras.proto"' to 'C:/Users/VALE DE PACT/Desktop/ROBOTICS/worlds/wildfire.wbt'.
-WARNING: : ElevationGrid node cannot be inserted at the top level of the node hierarchy.
