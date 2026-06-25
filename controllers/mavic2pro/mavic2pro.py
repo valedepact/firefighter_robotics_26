@@ -141,22 +141,6 @@ while robot.step(timestep) != -1:
     wind.update(key)
     drone_body.addForce(wind.force_vector(), False)
 
-    # ── Battery ─────────────────────────────────────────────────────────────
-    if state == "REST":
-        battery.charge()
-    else:
-        battery.drain()
-
-    # Low battery overrides everything else, including an active fire
-    # response — "the choice of going to charge overpowers stopping fire".
-    if battery.is_low and state not in ("RETURN", "REST"):
-        if state == "EXTINGUISH":
-            ext.reset()
-        nav.fire_gps = None
-        fc.set_altitude(7.0)
-        state = "RETURN"
-        print(f"🔋 Battery low ({battery.percent:.0f}%) — abandoning mission, returning to charge")
-
     # ── Always run flight controller (handles motors every step) ──────────
     takeoff_done = fc.update(imu, gps, gyro)
     if takeoff_done and state == "TAKEOFF":
