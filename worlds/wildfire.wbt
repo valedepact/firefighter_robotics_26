@@ -1,39 +1,28 @@
 #VRML_SIM R2025a utf8
-
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
-EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/RectangleArena.proto"
-EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/trees/protos/Sassafras.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/robots/dji/mavic/protos/Mavic2Pro.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/robots/boston_dynamics/spot/protos/Spot.proto"
 IMPORTABLE EXTERNPROTO "../protos/Fire.proto"
 IMPORTABLE EXTERNPROTO "../protos/Smoke.proto"
 IMPORTABLE EXTERNPROTO "../protos/Water.proto"
-EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/robots/dji/mavic/protos/Mavic2Pro.proto"
-EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/robots/boston_dynamics/spot/protos/Spot.proto"
 
 WorldInfo {
   basicTimeStep 8
-  defaultDamping Damping {
-    linear 0.5
-    angular 0.5
-  }
+  defaultDamping Damping { linear 0.5 angular 0.5 }
 }
+
 Viewpoint {
   orientation -0.01018454727271231 -0.005132030024472535 0.999934966517662 4.0750716027540435
   position -18.585321180522225 -18.073242072214246 0.06420034799333474
   follow "Mavic2Pro"
   followType "Pan and Tilt Shot"
 }
-TexturedBackground {
-}
-TexturedBackgroundLight {
-}
+
+TexturedBackground { }
+TexturedBackgroundLight { }
 
 # === UNEVEN TERRAIN ===
-# Using ElevationGrid for realistic hills and valleys.
-# Grid is 80x80m with 1m spacing (81 points).
-# Height field uses sine waves for organic bumps (hills/valleys ~0.3-0.8m variation).
-# Spot will "walk" over these using enhanced gait terrain following.
-
 ElevationGrid {
   translation 0 0.2 0
   xDimension 81
@@ -41,27 +30,15 @@ ElevationGrid {
   xSpacing 1.0
   zSpacing 1.0
   height [
-    # Procedurally generated example heights (sine-based bumps).
-    # In practice, you can generate this array in Python and paste,
-    # or use a heightmap texture. For demo, a compact repeating pattern.
-    # Full 81x81 array omitted for brevity — use the Python generator below
-    # or define a smaller grid first for testing.
-    # Example starter (small test grid pattern, scale up as needed):
-    0.0, 0.1, 0.2, 0.15, 0.05, 0.0, -0.1, 0.0, 0.1, 0.2,
-    # ... (repeat pattern or use full generated array)
-    # RECOMMENDED: Run the generator script to create full height array.
+    0.587, 0.618, 0.603, 0.550, 0.469, 0.379, 0.293, 0.222, 0.169, 0.133, 0.103, 0.070, 0.024, -0.036, -0.107, -0.181, -0.245, -0.287, -0.298, -0.278, -0.232, -0.174, -0.120, -0.086, -0.081, -0.109, -0.163, -0.233, -0.301, -0.353, -0.379, -0.375, -0.345, -0.298, -0.246, -0.199, -0.163, -0.137, -0.113, -0.082, -0.033, 0.042, 0.143, 0.261, 0.384, 0.495, 0.576, 0.615, 0.610, 0.563, 0.487, 0.397, 0.309, 0.234, 0.178, 0.139, 0.109, 0.077, 0.035, -0.022, -0.092, -0.167, -0.234, -0.281, -0.298, -0.284, -0.243, -0.186, -0.130, -0.091, -0.079, -0.101, -0.151, -0.218, -0.288, -0.345, -0.377, -0.378, -0.353, -0.308, -0.256,
+    # ... (full array continues — the complete 6561 values are in the generated file)
+    # Paste the entire height block from full_height.txt here
   ]
   appearance Appearance {
-    material Material {
-      diffuseColor 0.4 0.35 0.25
-      ambientIntensity 0.6
-    }
+    material Material { diffuseColor 0.4 0.35 0.25 ambientIntensity 0.6 }
     texture ImageTexture {
-      url [
-        "../protos/textures/sassafras_leaves.png"  # or a ground texture
-      ]
-      repeatS TRUE
-      repeatT TRUE
+      url [ "../protos/textures/sassafras_leaves.png" ]
+      repeatS TRUE repeatT TRUE
     }
   }
 }
@@ -72,68 +49,26 @@ Mavic2Pro {
   name "Mavic2Pro"
   supervisor TRUE
   bodySlot [
-    Receiver {
-      name "receiver"
-      channel 1
-    }
-    DistanceSensor {
-      translation 0 0.2 0
-      rotation 0 0 1 1.5708
-      name "front distance sensor"
-      lookupTable [
-        0 0 0
-        10 10 0
-      ]
-    }
-    Emitter {
-      name "coordination emitter"
-      channel 3
-    }
-    Receiver {
-      name "coordination receiver"
-      channel 3
-    }
+    Receiver { name "receiver" channel 1 }
+    DistanceSensor { translation 0 0.2 0 rotation 0 0 1 1.5708 name "front distance sensor" lookupTable [0 0 0, 10 10 0] }
+    Emitter { name "coordination emitter" channel 3 }
+    Receiver { name "coordination receiver" channel 3 }
   ]
 }
+
 Spot {
-  translation -17 -20 0.6
+  translation -17 -20 0.8
   rotation 0 0 1 0
   name "Spot"
   supervisor TRUE
-  frontExtension [
-    DistanceSensor {
-      translation 0 0.4 0
-      rotation 0 0 1 1.5708
-      name "front distance sensor"
-      lookupTable [
-        0 0 0
-        10 10 0
-      ]
-    }
-  ]
+  frontExtension [ DistanceSensor { translation 0 0.4 0 rotation 0 0 1 1.5708 name "front distance sensor" lookupTable [0 0 0, 10 10 0] } ]
   middleExtension [
-    Receiver {
-      name "fire receiver"
-      channel 1
-    }
-    Emitter {
-      name "coordination emitter"
-      channel 3
-    }
-    Receiver {
-      name "coordination receiver"
-      channel 3
-    }
+    Receiver { name "fire receiver" channel 1 }
+    Emitter { name "coordination emitter" channel 3 }
+    Receiver { name "coordination receiver" channel 3 }
   ]
 }
-RectangleArena {
-  translation 0 0.2 0
-  floorSize 80 80
-}
-Sassafras {
-  translation 3 0 0
-  name "sassafras tree(1)"
-}
+
 Sassafras {
   translation 4 10 0
   name "sassafras tree(2)"
@@ -187,14 +122,10 @@ Sassafras {
 }
 Robot {
   translation 19 -17 0
-  children [
-    Emitter {
-      channel 1
-    }
-  ]
+  children [ Emitter { channel 1 } ]
   name "fire_manager"
   controller "fire_manager"
   supervisor TRUE
 }
-DEF FIRE_1 Fire {
-}
+
+DEF FIRE_1 Fire { }
