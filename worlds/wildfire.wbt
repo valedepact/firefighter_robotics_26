@@ -29,17 +29,10 @@ ElevationGrid {
   zDimension 81
   xSpacing 1.0
   zSpacing 1.0
-  height [
-    0.587, 0.618, 0.603, 0.550, 0.469, 0.379, 0.293, 0.222, 0.169, 0.133, 0.103, 0.070, 0.024, -0.036, -0.107, -0.181, -0.245, -0.287, -0.298, -0.278, -0.232, -0.174, -0.120, -0.086, -0.081, -0.109, -0.163, -0.233, -0.301, -0.353, -0.379, -0.375, -0.345, -0.298, -0.246, -0.199, -0.163, -0.137, -0.113, -0.082, -0.033, 0.042, 0.143, 0.261, 0.384, 0.495, 0.576, 0.615, 0.610, 0.563, 0.487, 0.397, 0.309, 0.234, 0.178, 0.139, 0.109, 0.077, 0.035, -0.022, -0.092, -0.167, -0.234, -0.281, -0.298, -0.284, -0.243, -0.186, -0.130, -0.091, -0.079, -0.101, -0.151, -0.218, -0.288, -0.345, -0.377, -0.378, -0.353, -0.308, -0.256,
-    # ... (full array continues — the complete 6561 values are in the generated file)
-    # Paste the entire height block from full_height.txt here
-  ]
+  height [ 0.12, 0.25, 0.38, ... ]  # ← Run generator below for FULL array
   appearance Appearance {
     material Material { diffuseColor 0.4 0.35 0.25 ambientIntensity 0.6 }
-    texture ImageTexture {
-      url [ "../protos/textures/sassafras_leaves.png" ]
-      repeatS TRUE repeatT TRUE
-    }
+    texture ImageTexture { url ["../protos/textures/sassafras_leaves.png"] repeatS TRUE repeatT TRUE }
   }
 }
 
@@ -57,7 +50,7 @@ Mavic2Pro {
 }
 
 Spot {
-  translation -17 -20 0.8
+  translation -17 -20 0.85
   rotation 0 0 1 0
   name "Spot"
   supervisor TRUE
