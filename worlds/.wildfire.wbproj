@@ -10,7 +10,7 @@ globalOptionalRendering: CameraFrustums
 consoles: Console:All:All
 renderingDevicePerspectives: Mavic2Pro:camera;0;0.1675;0;0.076381
 renderingDevicePerspectives: Spot:left flank camera;1;0.062037;0;0.0372168
-renderingDevicePerspectives: Spot:left head camera;1;0.062037;0;0.06281
+renderingDevicePerspectives: Spot:left head camera;1;0.188889;0;0.06281
 renderingDevicePerspectives: Spot:rear camera;1;0.062037;0;0.0129451
 renderingDevicePerspectives: Spot:right flank camera;1;0.062037;0;0
-renderingDevicePerspectives: Spot:right head camera;1;0.062037;0;0.247934
+renderingDevicePerspectives: Spot:right head camera;1;0.175;0;0.247934
