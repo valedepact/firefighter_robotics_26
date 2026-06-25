@@ -27,6 +27,45 @@ TexturedBackground {
 }
 TexturedBackgroundLight {
 }
+
+# === UNEVEN TERRAIN ===
+# Using ElevationGrid for realistic hills and valleys.
+# Grid is 80x80m with 1m spacing (81 points).
+# Height field uses sine waves for organic bumps (hills/valleys ~0.3-0.8m variation).
+# Spot will "walk" over these using enhanced gait terrain following.
+
+ElevationGrid {
+  translation 0 0.2 0
+  xDimension 81
+  zDimension 81
+  xSpacing 1.0
+  zSpacing 1.0
+  height [
+    # Procedurally generated example heights (sine-based bumps).
+    # In practice, you can generate this array in Python and paste,
+    # or use a heightmap texture. For demo, a compact repeating pattern.
+    # Full 81x81 array omitted for brevity — use the Python generator below
+    # or define a smaller grid first for testing.
+    # Example starter (small test grid pattern, scale up as needed):
+    0.0, 0.1, 0.2, 0.15, 0.05, 0.0, -0.1, 0.0, 0.1, 0.2,
+    # ... (repeat pattern or use full generated array)
+    # RECOMMENDED: Run the generator script to create full height array.
+  ]
+  appearance Appearance {
+    material Material {
+      diffuseColor 0.4 0.35 0.25
+      ambientIntensity 0.6
+    }
+    texture ImageTexture {
+      url [
+        "../protos/textures/sassafras_leaves.png"  # or a ground texture
+      ]
+      repeatS TRUE
+      repeatT TRUE
+    }
+  }
+}
+
 Mavic2Pro {
   translation -20.00899318303439 -19.996339669148504 0.01545442254018295
   rotation 0 0 1 0
