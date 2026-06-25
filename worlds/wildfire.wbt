@@ -7,7 +7,7 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/project
 IMPORTABLE EXTERNPROTO "../protos/Fire.proto"
 IMPORTABLE EXTERNPROTO "../protos/Smoke.proto"
 IMPORTABLE EXTERNPROTO "../protos/Water.proto"
-EXTERNPROTO "../protos/Fire/SmokeAppearance.proto"   # Fixed SmokeAppearance error
+EXTERNPROTO "../protos/Fire/SmokeAppearance.proto"
 
 WorldInfo {
   basicTimeStep 8
@@ -82,13 +82,12 @@ Spot {
   ]
 }
 
-# Official Style Trees with Fire
+# Trees
 Sassafras { translation 3 0 0.65 name "sassafras tree(1)" }
 Sassafras { translation 4 10 0.43 name "sassafras tree(2)" }
 Sassafras { translation -8 8 0.25 name "sassafras tree(3)" }
 Sassafras { translation 3 -8 0.29 name "sassafras tree(4)" }
 Sassafras { translation -5 -14 0.15 name "sassafras tree(5)" }
-Sassafras { translation -2 8 0.37 name "sassafras tree(6)" }
 
 Robot {
   translation 19 -17 0
@@ -98,8 +97,18 @@ Robot {
   supervisor TRUE
 }
 
+# BIG VISIBLE FIRES
 DEF FIRE_1 Fire {
-  translation 5 5 0
-  fireRadius 3
-  intensity 1.0
+  translation 5 5 0.5
+  scale 4 4 4
+}
+
+DEF FIRE_2 Fire {
+  translation 3 -8 0.5
+  scale 3.5 3.5 3.5
+}
+
+DEF FIRE_3 Fire {
+  translation -4 -2 0.5
+  scale 3 3 3
 }
