@@ -47,7 +47,6 @@ fc      = FlightController(robot)
 nav     = Navigator()
 ext     = Extinguisher(robot)
 wind    = WindController()
-battery = Battery()
 drone_body = robot.getSelf()
 
 # ──────────────────────────────────────────────
@@ -160,14 +159,6 @@ while robot.step(timestep) != -1:
         interval_done  = (rest_timer >= PATROL_INTERVAL
                            and other_robot_state in (None, "REST"))
 
-        if battery.can_launch and (manual_trigger or fire_signal or help_call or interval_done):
-            rest_timer = 0
-            fc.set_altitude(7.0)
-            state = "TAKEOFF"
-            trigger = ("manual" if manual_trigger else "help call" if help_call
-                       else "fire signal" if fire_signal else "interval")
-            print(f"🚁 Leaving REST → TAKEOFF  (battery: {battery.percent:.0f}%, trigger: {trigger})")
-
     elif state == "TAKEOFF":
         pass   # fc.update() handles everything during takeoff
 
@@ -244,15 +235,8 @@ while robot.step(timestep) != -1:
             state = "RETURN"
             print("✅ Fire out → RETURN")
 
-    elif state == "RETURN":
-        arrived = nav.return_to_base(gps, fc, front_ds)
-        if arrived:
-            state = "REST"
-            print(f"🏠 Back at base → REST  (battery: {battery.percent:.0f}%)")
-
     # ── Periodic status print ─────────────────────────────────────────────
     if step % 60 == 0:
         pos = gps.getValues()
         print(f"[{step:>6}] state={state:<12} | pos=({pos[0]:.1f}, {pos[1]:.1f}) "
-              f"| alt={pos[2]:.1f}m | battery={battery.percent:.0f}% "
               f"| fires={[f[0] for f in known_fires]}")
