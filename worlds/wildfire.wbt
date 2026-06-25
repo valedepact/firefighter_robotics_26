@@ -23,16 +23,15 @@ Viewpoint {
 TexturedBackground { }
 TexturedBackgroundLight { }
 
-# === BRIGHT SOLID UNEVEN TERRAIN ===
+# === BRIGHT UNEVEN TERRAIN (Solid & Visible) ===
 Transform {
   translation 0 0.2 0
   children [
     Shape {
       appearance Appearance {
         material Material {
-          diffuseColor 0.45 0.75 0.35   # Bright green grass
+          diffuseColor 0.45 0.75 0.35
           ambientIntensity 0.95
-          specularColor 0.1 0.1 0.1
         }
         texture ImageTexture {
           url [ "../protos/textures/sassafras_leaves.png" ]
@@ -46,10 +45,10 @@ Transform {
         xSpacing 2.0
         zSpacing 2.0
         height [
-          0.0, 0.1, 0.2, 0.25, 0.22, 0.18, 0.12, 0.05, 0.0, 0.08, 0.16, 0.23, 0.26, 0.23, 0.17, 0.09, 0.02,
-          0.08, 0.18, 0.28, 0.35, 0.32, 0.26, 0.19, 0.12, 0.06, 0.15, 0.25, 0.33, 0.36, 0.32, 0.25, 0.17, 0.09,
-          0.15, 0.25, 0.32, 0.36, 0.33, 0.27, 0.20, 0.13, 0.08, 0.20, 0.29, 0.35, 0.36, 0.31, 0.24, 0.16, 0.10,
-          0.05, 0.12, 0.20, 0.25, 0.24, 0.20, 0.15, 0.09, 0.04, 0.10, 0.18, 0.23, 0.25, 0.22, 0.17, 0.11, 0.05
+          0.0, 0.1, 0.2, 0.25, 0.22, 0.18, 0.12, 0.05, 0.0, 0.08, 0.16, 0.23, 0.26, 0.23, 0.17, 0.09, 0.02, 0.08, 0.18, 0.28, 0.35,
+          0.08, 0.18, 0.28, 0.35, 0.32, 0.26, 0.19, 0.12, 0.06, 0.15, 0.25, 0.33, 0.36, 0.32, 0.25, 0.17, 0.09, 0.15, 0.25, 0.32, 0.36,
+          0.15, 0.25, 0.32, 0.36, 0.33, 0.27, 0.20, 0.13, 0.08, 0.20, 0.29, 0.35, 0.36, 0.31, 0.24, 0.16, 0.10, 0.05, 0.12, 0.20, 0.25,
+          0.05, 0.12, 0.20, 0.25, 0.24, 0.20, 0.15, 0.09, 0.04, 0.10, 0.18, 0.23, 0.25, 0.22, 0.17, 0.11, 0.05, 0.0, 0.1, 0.2, 0.25
         ]
       }
     }
@@ -82,7 +81,7 @@ Spot {
   ]
 }
 
-# Trees sitting on terrain
+# Trees on terrain
 Sassafras { translation 3 0 0.65 name "sassafras tree(1)" }
 Sassafras { translation 4 10 0.43 name "sassafras tree(2)" }
 Sassafras { translation -8 8 0.25 name "sassafras tree(3)" }
@@ -98,27 +97,3 @@ Robot {
 }
 
 DEF FIRE_1 Fire { }
-
-
-
-https://github.com/cyberbotics/webots-projects/tree/master/projects/forest_firefighters
-
-
-ERROR: 'C:/Users/VALE DE PACT/Desktop/ROBOTICS/worlds/wildfire.wbt':45:9: error: Skipped unknown 'zDimension' field in ElevationGrid node.
-ERROR: 'C:/Users/VALE DE PACT/Desktop/ROBOTICS/worlds/wildfire.wbt':47:9: error: Skipped unknown 'zSpacing' field in ElevationGrid node.
-WARNING: Pose  > Shape  > ElevationGrid : 'height' contains 68 ignored extra value(s).
-INFO: mavic2pro: Starting controller: "C:\Users\VALE DE PACT\AppData\Local\Programs\Python\Python314\python.exe" -u mavic2pro.py
-INFO: spot_moving_demo: Starting controller: "C:\Program Files\Webots\projects\robots\boston_dynamics\spot\controllers\spot_moving_demo\spot_moving_demo.exe"
-INFO: fire_manager: Starting controller: "C:\Users\VALE DE PACT\AppData\Local\Programs\Python\Python314\python.exe" -u fire_manager.py
-ERROR: Missing declaration for 'SmokeAppearance', add: 'EXTERNPROTO "../protos/Fire/SmokeAppearance.proto"' to 'C:/Users/VALE DE PACT/Desktop/ROBOTICS/protos/Smoke.proto'.
-📡 Emitter found — will broadcast fire positions
-🔥 FIRE_1 registered at (0.0, 0.0)
-FireManager ready | spread every 500 steps | max 6 fires
-🔥 Fire spread! FIRE_2 spawned at (3, -8) | total fires: 2
-=== FIRE MANAGER RUNNING ===
-🚁 Mavic 2 Pro — Scouting + Fire Reporting Active
-[step 500] Active fires: [('FIRE_1', 0.0, 0.0), ('FIRE_2', 3.0, -8.0)]
-🔥 Fire spread! FIRE_3 spawned at (-4, -2) | total fires: 3
-[step 1000] Active fires: [('FIRE_1', 0.0, 0.0), ('FIRE_2', 3.0, -8.0), ('FIRE_3', -4.0, -2.0)]
-[step 1500] Active fires: [('FIRE_1', 0.0, 0.0), ('FIRE_2', 3.0, -8.0), ('FIRE_3', -4.0, -2.0)]
-[step 2000] Active fires: [('FIRE_1', 0.0, 0.0), ('FIRE_2', 3.0, -8.0), ('FIRE_3', -4.0, -2.0)]
