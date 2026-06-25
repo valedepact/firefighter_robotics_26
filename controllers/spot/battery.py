@@ -7,7 +7,7 @@ drone can just instantiate its own Battery() rather than needing a
 shared/rewritten model.
 """
 
-BATTERY_MAX               = 100.0
+'''BATTERY_MAX               = 100.0
 BATTERY_DRAIN_PER_STEP    = 0.02   # full charge lasts ~5000 steps (~40s) of continuous flight
 BATTERY_CHARGE_PER_STEP   = 0.5    # full recharge takes ~200 steps (~1.6s)
 BATTERY_LOW_THRESHOLD     = 25.0   # at/below this, return-to-charge overrides everything else
@@ -30,4 +30,4 @@ class Battery:
 
     @property
     def can_launch(self):
-        return self.percent >= MIN_BATTERY_TO_LAUNCH
+        return self.percent >= MIN_BATTERY_TO_LAUNCH'''
