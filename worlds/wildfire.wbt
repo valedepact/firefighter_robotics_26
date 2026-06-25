@@ -7,7 +7,7 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/project
 IMPORTABLE EXTERNPROTO "../protos/Fire.proto"
 IMPORTABLE EXTERNPROTO "../protos/Smoke.proto"
 IMPORTABLE EXTERNPROTO "../protos/Water.proto"
-EXTERNPROTO "../protos/Fire/SmokeAppearance.proto"
+'C:/Users/VALE DE PACT/Desktop/ROBOTICS/protos/Smoke.proto'
 
 WorldInfo {
   basicTimeStep 8
