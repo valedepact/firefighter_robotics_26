@@ -8,13 +8,13 @@ Responsibilities:
   - Remove fires that have been extinguished by the drone
   - Broadcast active fire positions to the drone via Emitter
 
-Communication with drone:
+Communication with drone and Spot:
   The fire manager uses a Webots Emitter to broadcast a CSV string every
   BROADCAST_INTERVAL steps:
-      "FIRE_2,3.0,-8.0|FIRE_3,-8.0,8.0"
-  The drone's mavic2pro.py can read this with a Receiver device to update
-  its target fire. (Add Emitter to fire_manager robot + Receiver to Mavic2Pro
-  in the .wbt file to enable this — works without it too.)
+      "FIRE_2,3.0,-8.0,1.5|FIRE_3,-8.0,8.0,3.0"   (def,x,y,strength)
+  Both mavic2pro.py and spot.py read this with their own Receiver device to
+  update their target fire, and use the strength value to decide whether to
+  handle a fire alone or call the other robot in (see coordination.py).
 """
 
 import random
@@ -191,14 +191,14 @@ class FireManager:
 
     def _broadcast(self):
         """
-        Send active fire list to the drone via Emitter.
-        Format: "FIRE_1,0.0,0.0|FIRE_2,3.0,-8.0"
+        Send active fire list to the drone and Spot via Emitter.
+        Format: "FIRE_1,0.0,0.0,1.0|FIRE_2,3.0,-8.0,2.5" (def,x,y,strength)
         """
         if not self._emitter or not self._fires:
             return
 
         parts = [
-            f"{f['def']},{f['x']:.1f},{f['y']:.1f}"
+            f"{f['def']},{f['x']:.1f},{f['y']:.1f},{f['strength']:.1f}"
             for f in self._fires.values()
         ]
         message = "|".join(parts)
