@@ -152,9 +152,9 @@ Spot {
     Receiver { name "coordination receiver" channel 3 }
   ]
 }
-# === TREES ALIGNED TO TERRAIN ===
+# === TREES ALIGNED TO GROUND ===
 Sassafras {
-  translation 3 0 0.645
+  translation 3 0 0.65
   name "sassafras tree(1)"
 }
 Sassafras {
@@ -162,51 +162,51 @@ Sassafras {
   name "sassafras tree(2)"
 }
 Sassafras {
-  translation -8 8 0.051
+  translation -8 8 0.05
   name "sassafras tree(3)"
 }
 Sassafras {
-  translation 3 -8 0.287
+  translation 3 -8 0.29
   name "sassafras tree(4)"
 }
 Sassafras {
-  translation -5 -14 0.012
+  translation -5 -14 0.01
   name "sassafras tree(5)"
 }
 Sassafras {
-  translation -2 8 0.369
+  translation -2 8 0.37
   name "sassafras tree(6)"
 }
 Sassafras {
-  translation -9 -7 0.073
+  translation -9 -7 0.07
   name "sassafras tree(7)"
 }
 Sassafras {
-  translation -12 2 0.004
+  translation -12 2 0.00
   name "sassafras tree(8)"
 }
 Sassafras {
-  translation -4 -2 0.156
+  translation -4 -2 0.16
   name "sassafras tree(9)"
 }
 Sassafras {
-  translation -11 -18 -0.235
+  translation -11 -18 -0.24
   name "sassafras tree(10)"
 }
 Sassafras {
-  translation -15 -8 0.167
+  translation -15 -8 0.17
   name "sassafras tree(11)"
 }
 Sassafras {
-  translation -1 -16 0.037
+  translation -1 -16 0.04
   name "sassafras tree(12)"
 }
 Sassafras {
-  translation 10 0 0.871
+  translation 10 0 0.87
   name "sassafras tree(13)"
 }
 Sassafras {
-  translation 10 0 -5 0.8
+  translation 10 0 -5 0.80
 }
 Sassafras {
   translation 10 0 -3 0.86
