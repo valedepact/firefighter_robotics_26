@@ -1,4 +1,84 @@
-# Camera processing, fire/smoke detection (OpenCV)
+import os
+import cv2
+import numpy as np
+
+_TEXTURES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "protos", "textures")
+
+TEMPLATE_MATCH_THRESHOLD = 0.45
+TEMPLATE_SCALES = (16, 32, 64, 96)
+
+def _load_templates(filenames):
+    templates = []
+    for name in filenames:
+        path = os.path.join(_TEXTURES_DIR, name)
+        img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+        if img is not None:
+            templates.append(img)
+    return templates
+
+FIRE_TEMPLATES = _load_templates(["fire_00.png", "fire_03.png", "fire_06.png", "fire_09.png"])
+SMOKE_TEMPLATES = _load_templates(["smoke.png"])
+
+FIRE_LOWER = np.array([5, 150, 150], dtype=np.uint8)
+FIRE_UPPER = np.array([35, 255, 255], dtype=np.uint8)
+SMOKE_LOWER = np.array([0, 0, 160], dtype=np.uint8)
+SMOKE_UPPER = np.array([180, 40, 230], dtype=np.uint8)
+
+FIRE_MIN_AREA = 30
+SMOKE_MIN_AREA = 250
+
+def _webots_image_to_bgr(camera):
+    raw = camera.getImage()
+    if not raw: return None
+    w = camera.getWidth()
+    h = camera.getHeight()
+    return np.frombuffer(raw, np.uint8).reshape((h, w, 4))[:, :, :3]
+
+def _largest_contour_info(mask):
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if not contours: return 0, None, None, None
+    largest = max(contours, key=cv2.contourArea)
+    area = cv2.contourArea(largest)
+    bbox = cv2.boundingRect(largest)
+    M = cv2.moments(largest)
+    if M["m00"] == 0: return area, None, None, bbox
+    cx = int(M["m10"] / M["m00"])
+    cy = int(M["m01"] / M["m00"])
+    return area, cx, cy, bbox
+
+def _template_score(gray_roi, templates):
+    if gray_roi.size == 0: return 0.0
+    best = 0.0
+    for template in templates:
+        for scale in TEMPLATE_SCALES:
+            if scale > gray_roi.shape[0] or scale > gray_roi.shape[1]: continue
+            resized = cv2.resize(template, (scale, scale))
+            result = cv2.matchTemplate(gray_roi, resized, cv2.TM_CCOEFF_NORMED)
+            best = max(best, float(result.max()))
+    return best
+
+def detect_fire(camera):
+    bgr = _webots_image_to_bgr(camera)
+    if bgr is None: return {"detected": False, "area": 0, "cx": None, "cy": None, "offset_x": None, "offset_y": None}
+    hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
+    mask = cv2.inRange(hsv, FIRE_LOWER, FIRE_UPPER)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    mask = cv2.morphologyEx(cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel), cv2.MORPH_CLOSE, kernel)
+    area, cx, cy, bbox = _largest_contour_info(mask)
+    if area < FIRE_MIN_AREA or cx is None: return {"detected": False, "area": 0, "cx": None, "cy": None, "offset_x": None, "offset_y": None}
+    if FIRE_TEMPLATES:
+        gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+        x, y, bw, bh = bbox
+        roi = gray[y:y+bh, x:x+bw]
+        if _template_score(roi, FIRE_TEMPLATES) < TEMPLATE_MATCH_THRESHOLD:
+            return {"detected": False, "area": 0, "cx": None, "cy": None, "offset_x": None, "offset_y": None}
+    w, h = camera.getWidth(), camera.getHeight()
+    return {"detected": True, "area": int(area), "cx": cx, "cy": cy, "offset_x": (cx - w / 2) / (w / 2), "offset_y": (cy - h / 2) / (h / 2)}
+
+def scan(camera):
+    fire = detect_fire(camera)
+    if fire["detected"]: return "fire", fire
+    return None, {"detected": False, "area": 0, "cx": None, "cy": None, "offset_x": None, "offset_y": None}# Camera processing, fire/smoke detection (OpenCV)
 
 import os
 
