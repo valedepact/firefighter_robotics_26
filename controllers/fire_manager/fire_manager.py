@@ -25,9 +25,9 @@ from controller import Supervisor
 #  Tuning constants
 # ──────────────────────────────────────────────
 SPREAD_INTERVAL      = 500    # steps between spread checks (~4 s at 8 ms timestep)
-SPREAD_RADIUS        = 6.0    # metres — radius a fire can reach at max strength
-MIN_SPREAD_RADIUS    = 1.0    # metres — radius a freshly-spawned (weak) fire can reach
-SPREAD_PROBABILITY   = 0.35   # chance per eligible tree per spread event, at max strength
+SPREAD_RADIUS        = 12.0    # metres — radius a fire can reach at max strength
+MIN_SPREAD_RADIUS    = 2.0    # metres — radius a freshly-spawned (weak) fire can reach
+SPREAD_PROBABILITY   = 0.6   # chance per eligible tree per spread event, at max strength
 MAX_FIRES            = 6      # cap to keep simulation manageable
 BROADCAST_INTERVAL   = 60     # steps between emitter broadcasts
 
@@ -216,6 +216,9 @@ robot = Supervisor()
 timestep = int(robot.getBasicTimeStep())
 
 fm = FireManager(robot)
+# force ignite a tree on startup
+fm._spawn_fire(3, -8)
+
 step = 0
 
 print("=== FIRE MANAGER RUNNING ===")
