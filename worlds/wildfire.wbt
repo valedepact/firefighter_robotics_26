@@ -23,32 +23,37 @@ Viewpoint {
 TexturedBackground { }
 TexturedBackgroundLight { }
 
-# === BRIGHT UNEVEN TERRAIN ===
-Shape {
-  appearance Appearance {
-    material Material {
-      diffuseColor 0.35 0.65 0.25   # Bright grassy green
-      ambientIntensity 0.9
+# === BRIGHT SOLID UNEVEN TERRAIN ===
+Transform {
+  translation 0 0.2 0
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          diffuseColor 0.45 0.75 0.35   # Bright green grass
+          ambientIntensity 0.95
+          specularColor 0.1 0.1 0.1
+        }
+        texture ImageTexture {
+          url [ "../protos/textures/sassafras_leaves.png" ]
+          repeatS TRUE
+          repeatT TRUE
+        }
+      }
+      geometry ElevationGrid {
+        xDimension 41
+        zDimension 41
+        xSpacing 2.0
+        zSpacing 2.0
+        height [
+          0.0, 0.1, 0.2, 0.25, 0.22, 0.18, 0.12, 0.05, 0.0, 0.08, 0.16, 0.23, 0.26, 0.23, 0.17, 0.09, 0.02,
+          0.08, 0.18, 0.28, 0.35, 0.32, 0.26, 0.19, 0.12, 0.06, 0.15, 0.25, 0.33, 0.36, 0.32, 0.25, 0.17, 0.09,
+          0.15, 0.25, 0.32, 0.36, 0.33, 0.27, 0.20, 0.13, 0.08, 0.20, 0.29, 0.35, 0.36, 0.31, 0.24, 0.16, 0.10,
+          0.05, 0.12, 0.20, 0.25, 0.24, 0.20, 0.15, 0.09, 0.04, 0.10, 0.18, 0.23, 0.25, 0.22, 0.17, 0.11, 0.05
+        ]
+      }
     }
-    texture ImageTexture {
-      url [ "../protos/textures/sassafras_leaves.png" ]
-      repeatS TRUE
-      repeatT TRUE
-    }
-  }
-  geometry ElevationGrid {
-    translation 0 0.2 0
-    xDimension 41
-    zDimension 41
-    xSpacing 2.0
-    zSpacing 2.0
-    height [
-      0.0, 0.1, 0.2, 0.25, 0.2, 0.15, 0.1, 0.05, 0.0, 0.1, 0.2, 0.25, 0.2, 0.15, 0.1, 0.05, 0.0, 0.1, 0.2, 0.25, 0.2,
-      0.1, 0.2, 0.3, 0.35, 0.3, 0.25, 0.2, 0.15, 0.1, 0.2, 0.3, 0.35, 0.3, 0.25, 0.2, 0.15, 0.1, 0.2, 0.3, 0.35, 0.3,
-      0.2, 0.25, 0.3, 0.35, 0.3, 0.25, 0.2, 0.15, 0.1, 0.15, 0.25, 0.3, 0.35, 0.3, 0.25, 0.2, 0.15, 0.1, 0.15, 0.25, 0.3,
-      0.0, 0.1, 0.2, 0.25, 0.2, 0.15, 0.1, 0.05, 0.0, 0.1, 0.2, 0.25, 0.2, 0.15, 0.1, 0.05, 0.0, 0.1, 0.2, 0.25, 0.2
-    ]
-  }
+  ]
 }
 
 Mavic2Pro {
@@ -65,7 +70,7 @@ Mavic2Pro {
 }
 
 Spot {
-  translation -17 -20 0.85
+  translation -17 -20 1.0
   rotation 0 0 1 0
   name "Spot"
   supervisor TRUE
@@ -77,12 +82,12 @@ Spot {
   ]
 }
 
-# Trees on terrain
+# Trees sitting on terrain
 Sassafras { translation 3 0 0.65 name "sassafras tree(1)" }
 Sassafras { translation 4 10 0.43 name "sassafras tree(2)" }
-Sassafras { translation -8 8 0.05 name "sassafras tree(3)" }
+Sassafras { translation -8 8 0.25 name "sassafras tree(3)" }
 Sassafras { translation 3 -8 0.29 name "sassafras tree(4)" }
-Sassafras { translation -5 -14 0.01 name "sassafras tree(5)" }
+Sassafras { translation -5 -14 0.15 name "sassafras tree(5)" }
 
 Robot {
   translation 19 -17 0
@@ -93,4 +98,3 @@ Robot {
 }
 
 DEF FIRE_1 Fire { }
-
