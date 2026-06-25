@@ -22,7 +22,7 @@ Viewpoint {
 TexturedBackground { }
 TexturedBackgroundLight { }
 
-# === UNEVEN TERRAIN ===
+# === BRIGHT UNEVEN TERRAIN ===
 ElevationGrid {
   translation 0 0.2 0
   xDimension 81
@@ -37,8 +37,8 @@ ElevationGrid {
   ]
   appearance Appearance {
     material Material {
-      diffuseColor 0.4 0.35 0.25
-      ambientIntensity 0.6
+      diffuseColor 0.35 0.55 0.25   # Bright green terrain
+      ambientIntensity 0.8
     }
     texture ImageTexture {
       url [ "../protos/textures/sassafras_leaves.png" ]
@@ -53,6 +53,12 @@ Mavic2Pro {
   rotation 0 0 1 0
   name "Mavic2Pro"
   supervisor TRUE
+  bodySlot [
+    Receiver { name "receiver" channel 1 }
+    DistanceSensor { translation 0 0.2 0 rotation 0 0 1 1.5708 name "front distance sensor" lookupTable [0 0 0, 10 10 0] }
+    Emitter { name "coordination emitter" channel 3 }   # ← Fixed missing emitter
+    Receiver { name "coordination receiver" channel 3 }
+  ]
 }
 
 Spot {
@@ -60,9 +66,15 @@ Spot {
   rotation 0 0 1 0
   name "Spot"
   supervisor TRUE
+  frontExtension [ DistanceSensor { translation 0 0.4 0 rotation 0 0 1 1.5708 name "front distance sensor" lookupTable [0 0 0, 10 10 0] } ]
+  middleExtension [
+    Receiver { name "fire receiver" channel 1 }
+    Emitter { name "coordination emitter" channel 3 }
+    Receiver { name "coordination receiver" channel 3 }
+  ]
 }
 
-# Trees on terrain
+# Trees sitting on ground
 Sassafras { translation 3 0 0.65 name "sassafras tree(1)" }
 Sassafras { translation 4 10 0.43 name "sassafras tree(2)" }
 Sassafras { translation -8 8 0.05 name "sassafras tree(3)" }
