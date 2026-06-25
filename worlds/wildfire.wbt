@@ -3,6 +3,7 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/project
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/robots/dji/mavic/protos/Mavic2Pro.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/robots/boston_dynamics/spot/protos/Spot.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/trees/protos/Sassafras.proto"
 IMPORTABLE EXTERNPROTO "../protos/Fire.proto"
 IMPORTABLE EXTERNPROTO "../protos/Smoke.proto"
 IMPORTABLE EXTERNPROTO "../protos/Water.proto"
@@ -23,28 +24,30 @@ TexturedBackground { }
 TexturedBackgroundLight { }
 
 # === BRIGHT UNEVEN TERRAIN ===
-ElevationGrid {
-  translation 0 0.2 0
-  xDimension 81
-  zDimension 81
-  xSpacing 1.0
-  zSpacing 1.0
-  height [
-    0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.2, 0.15, 0.1, 0.05, 0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.2, 0.15, 0.1, 0.05, 0.0,
-    0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.25, 0.2, 0.15, 0.1, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.25, 0.2, 0.15, 0.1, 0.05,
-    0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.3, 0.25, 0.2, 0.15, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.3, 0.25, 0.2, 0.15, 0.1,
-    0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.2, 0.15, 0.1, 0.05, 0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.2, 0.15, 0.1, 0.05, 0.0
-  ]
+Shape {
   appearance Appearance {
     material Material {
-      diffuseColor 0.35 0.55 0.25   # Bright green terrain
-      ambientIntensity 0.8
+      diffuseColor 0.35 0.65 0.25   # Bright grassy green
+      ambientIntensity 0.9
     }
     texture ImageTexture {
       url [ "../protos/textures/sassafras_leaves.png" ]
       repeatS TRUE
       repeatT TRUE
     }
+  }
+  geometry ElevationGrid {
+    translation 0 0.2 0
+    xDimension 41
+    zDimension 41
+    xSpacing 2.0
+    zSpacing 2.0
+    height [
+      0.0, 0.1, 0.2, 0.25, 0.2, 0.15, 0.1, 0.05, 0.0, 0.1, 0.2, 0.25, 0.2, 0.15, 0.1, 0.05, 0.0, 0.1, 0.2, 0.25, 0.2,
+      0.1, 0.2, 0.3, 0.35, 0.3, 0.25, 0.2, 0.15, 0.1, 0.2, 0.3, 0.35, 0.3, 0.25, 0.2, 0.15, 0.1, 0.2, 0.3, 0.35, 0.3,
+      0.2, 0.25, 0.3, 0.35, 0.3, 0.25, 0.2, 0.15, 0.1, 0.15, 0.25, 0.3, 0.35, 0.3, 0.25, 0.2, 0.15, 0.1, 0.15, 0.25, 0.3,
+      0.0, 0.1, 0.2, 0.25, 0.2, 0.15, 0.1, 0.05, 0.0, 0.1, 0.2, 0.25, 0.2, 0.15, 0.1, 0.05, 0.0, 0.1, 0.2, 0.25, 0.2
+    ]
   }
 }
 
@@ -56,7 +59,7 @@ Mavic2Pro {
   bodySlot [
     Receiver { name "receiver" channel 1 }
     DistanceSensor { translation 0 0.2 0 rotation 0 0 1 1.5708 name "front distance sensor" lookupTable [0 0 0, 10 10 0] }
-    Emitter { name "coordination emitter" channel 3 }   # ← Fixed missing emitter
+    Emitter { name "coordination emitter" channel 3 }
     Receiver { name "coordination receiver" channel 3 }
   ]
 }
@@ -74,7 +77,7 @@ Spot {
   ]
 }
 
-# Trees sitting on ground
+# Trees on terrain
 Sassafras { translation 3 0 0.65 name "sassafras tree(1)" }
 Sassafras { translation 4 10 0.43 name "sassafras tree(2)" }
 Sassafras { translation -8 8 0.05 name "sassafras tree(3)" }
@@ -90,4 +93,3 @@ Robot {
 }
 
 DEF FIRE_1 Fire { }
-
