@@ -98,3 +98,27 @@ Robot {
 }
 
 DEF FIRE_1 Fire { }
+
+
+
+https://github.com/cyberbotics/webots-projects/tree/master/projects/forest_firefighters
+
+
+ERROR: 'C:/Users/VALE DE PACT/Desktop/ROBOTICS/worlds/wildfire.wbt':45:9: error: Skipped unknown 'zDimension' field in ElevationGrid node.
+ERROR: 'C:/Users/VALE DE PACT/Desktop/ROBOTICS/worlds/wildfire.wbt':47:9: error: Skipped unknown 'zSpacing' field in ElevationGrid node.
+WARNING: Pose  > Shape  > ElevationGrid : 'height' contains 68 ignored extra value(s).
+INFO: mavic2pro: Starting controller: "C:\Users\VALE DE PACT\AppData\Local\Programs\Python\Python314\python.exe" -u mavic2pro.py
+INFO: spot_moving_demo: Starting controller: "C:\Program Files\Webots\projects\robots\boston_dynamics\spot\controllers\spot_moving_demo\spot_moving_demo.exe"
+INFO: fire_manager: Starting controller: "C:\Users\VALE DE PACT\AppData\Local\Programs\Python\Python314\python.exe" -u fire_manager.py
+ERROR: Missing declaration for 'SmokeAppearance', add: 'EXTERNPROTO "../protos/Fire/SmokeAppearance.proto"' to 'C:/Users/VALE DE PACT/Desktop/ROBOTICS/protos/Smoke.proto'.
+📡 Emitter found — will broadcast fire positions
+🔥 FIRE_1 registered at (0.0, 0.0)
+FireManager ready | spread every 500 steps | max 6 fires
+🔥 Fire spread! FIRE_2 spawned at (3, -8) | total fires: 2
+=== FIRE MANAGER RUNNING ===
+🚁 Mavic 2 Pro — Scouting + Fire Reporting Active
+[step 500] Active fires: [('FIRE_1', 0.0, 0.0), ('FIRE_2', 3.0, -8.0)]
+🔥 Fire spread! FIRE_3 spawned at (-4, -2) | total fires: 3
+[step 1000] Active fires: [('FIRE_1', 0.0, 0.0), ('FIRE_2', 3.0, -8.0), ('FIRE_3', -4.0, -2.0)]
+[step 1500] Active fires: [('FIRE_1', 0.0, 0.0), ('FIRE_2', 3.0, -8.0), ('FIRE_3', -4.0, -2.0)]
+[step 2000] Active fires: [('FIRE_1', 0.0, 0.0), ('FIRE_2', 3.0, -8.0), ('FIRE_3', -4.0, -2.0)]
